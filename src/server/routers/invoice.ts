@@ -1359,6 +1359,75 @@ export const invoiceRouter = router({
       };
     }),
 
+  // Update multiple credits (Competition Directors only)
+  updateAdditionalCredits: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      credits: z.array(z.object({
+        amount: z.number().min(0),
+        note: z.string(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can apply credits
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply credits to invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      // Calculate total from all credits in array
+      const totalCredits = input.credits.reduce((sum, c) => sum + c.amount, 0);
+
+      const subtotal = Number(invoice.subtotal);
+      const taxRate = Number(invoice.tax_rate || 0);
+      const existingCreditAmount = Number(invoice.credit_amount || 0); // Percentage discount
+
+      // Calculate new total: (subtotal - percentage_discount - additional_credits) * (1 + taxRate)
+      const afterAllCredits = subtotal - existingCreditAmount - totalCredits;
+      const taxAmount = afterAllCredits * taxRate;
+      const newTotal = afterAllCredits + taxAmount;
+
+      // Recalculate amount_due with deposit
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
+      // Update invoice with additional_credits array
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          additional_credits: input.credits as any,
+          // Clear old single-credit fields when using new array
+          other_credit_amount: null,
+          other_credit_reason: null,
+          total: newTotal,
+          amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        creditsCount: input.credits.length,
+        totalCredits,
+        newTotal,
+      };
+    }),
+
   // Update invoice line items (editable pricing - Competition Directors and Studio Directors)
   updateLineItems: protectedProcedure
     .input(z.object({

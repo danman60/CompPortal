@@ -80,7 +80,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
   const [showSplitWizard, setShowSplitWizard] = useState(false);
   const [showSubInvoices, setShowSubInvoices] = useState(false);
-  const [otherCreditInput, setOtherCreditInput] = useState({ amount: 0, reason: "" });
+  const [creditsInput, setCreditsInput] = useState<Array<{ amount: number; note: string }>>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [customDiscountInput, setCustomDiscountInput] = useState<string>('');
   const [portalMounted, setPortalMounted] = useState(false);
@@ -124,13 +124,22 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   const hasSubInvoices = (subInvoicesData?.sub_invoices?.length || 0) > 0;
 
-  // Populate modal with existing credit values when opening
+  // Populate modal with existing credits when opening
   useEffect(() => {
     if (showCreditModal && dbInvoice) {
-      setOtherCreditInput({
-        amount: Number(dbInvoice.other_credit_amount || 0),
-        reason: dbInvoice.other_credit_reason || "",
-      });
+      // Load from additional_credits array, or migrate from old single-credit fields
+      const existingCredits = (dbInvoice as any).additional_credits as Array<{ amount: number; note: string }> | null;
+      if (existingCredits && existingCredits.length > 0) {
+        setCreditsInput(existingCredits);
+      } else if (Number(dbInvoice.other_credit_amount || 0) > 0) {
+        // Migrate old single credit to array format
+        setCreditsInput([{
+          amount: Number(dbInvoice.other_credit_amount),
+          note: dbInvoice.other_credit_reason || '',
+        }]);
+      } else {
+        setCreditsInput([]);
+      }
     }
   }, [showCreditModal, dbInvoice]);
 
@@ -168,11 +177,23 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     onSuccess: (data) => {
       toast.success(data.creditAmount > 0 ? 'Credit applied!' : 'Credit removed!');
       setShowCreditModal(false);
-      setOtherCreditInput({ amount: 0, reason: "" });
+      setCreditsInput([]);
       refetch();
     },
     onError: (error: any) => {
       toast.error(`Failed to apply credit: ${error.message}`);
+    },
+  });
+
+  const updateAdditionalCreditsMutation = trpc.invoice.updateAdditionalCredits.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.creditsCount > 0 ? `${data.creditsCount} credit(s) saved!` : 'Credits cleared!');
+      setShowCreditModal(false);
+      setCreditsInput([]);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to save credits: ${error.message}`);
     },
   });
 
@@ -250,7 +271,14 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   // Get discounts and credits from database (source of truth)
   const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0; // Percentage discount
-  const otherCreditAmount = dbInvoice ? Number(dbInvoice.other_credit_amount || 0) : 0; // Fixed credit
+
+  // Get additional credits from new array field, or fall back to old single-credit fields
+  const additionalCredits = (dbInvoice as any)?.additional_credits as Array<{ amount: number; note: string }> | null;
+  const additionalCreditsTotal = additionalCredits?.reduce((sum, c) => sum + (c.amount || 0), 0) || 0;
+  const otherCreditAmount = additionalCreditsTotal > 0
+    ? additionalCreditsTotal
+    : (dbInvoice ? Number(dbInvoice.other_credit_amount || 0) : 0); // Fallback to old field
+
   const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
 
   // Sync custom discount input with current database value
@@ -604,27 +632,21 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             </div>
           )}
 
-          {otherCreditAmount > 0 && (
+          {/* Show each additional credit separately */}
+          {additionalCredits && additionalCredits.length > 0 ? (
+            additionalCredits.map((credit, idx) => (
+              <div key={idx} className="flex justify-between items-center py-2 border-b border-white/10">
+                <span className="text-purple-400">
+                  {credit.note || `Credit ${idx + 1}`}
+                </span>
+                <span className="text-purple-400">-${credit.amount.toFixed(2)}</span>
+              </div>
+            ))
+          ) : otherCreditAmount > 0 && (
+            // Fallback: show old single credit field
             <div className="flex justify-between items-center py-2 border-b border-white/10">
               <span className="text-purple-400">Other Credits{dbInvoice?.other_credit_reason && `: ${dbInvoice.other_credit_reason}`}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-400">-${otherCreditAmount.toFixed(2)}</span>
-                {isCompetitionDirector && (
-                  <button
-                    onClick={() => {
-                      if (!dbInvoice) return;
-                      applyCustomCreditMutation.mutate({
-                        invoiceId: dbInvoice.id,
-                        creditAmount: 0,
-                      });
-                    }}
-                    className="text-red-400 hover:text-red-300 transition-colors"
-                    title="Remove credit"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
+              <span className="text-purple-400">-${otherCreditAmount.toFixed(2)}</span>
             </div>
           )}
 
@@ -886,56 +908,105 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <p className="mt-2">For questions about this invoice, please contact the competition organizers.</p>
       </div>
 
-      {/* Other Credits Modal - rendered via Portal to document.body */}
+      {/* Credits Modal - Multiple credits support */}
       {showCreditModal && dbInvoice && portalMounted && createPortal(
         <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-sm">
           <div className="min-h-full flex items-center justify-center p-4">
-            <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
+            <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-lg w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-2">Manage Credits</h3>
               <p className="text-sm text-gray-400 mb-4">
-                Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
+                Add multiple credits/discounts. Each will be shown separately on the invoice.
               </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-blue-300 text-sm mb-2">Credit Amount ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={otherCreditInput.amount}
-                    onChange={(e) => setOtherCreditInput({ ...otherCreditInput, amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
-                    placeholder={otherCreditAmount > 0 ? `Current: ${otherCreditAmount.toFixed(2)}` : 'Enter amount'}
-                  />
-                </div>
-                <div>
-                  <label className="block text-blue-300 text-sm mb-2">Reason (Optional)</label>
-                  <input
-                    type="text"
-                    value={otherCreditInput.reason}
-                    onChange={(e) => setOtherCreditInput({ ...otherCreditInput, reason: e.target.value })}
-                    placeholder={dbInvoice.other_credit_reason || "e.g., Loyalty credit, Refund, Compensation"}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
-                  />
-                </div>
+
+              {/* Credits list */}
+              <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
+                {creditsInput.map((credit, idx) => (
+                  <div key={idx} className="flex gap-2 items-start bg-white/5 p-3 rounded-lg">
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={credit.amount || ''}
+                        onChange={(e) => {
+                          const updated = [...creditsInput];
+                          updated[idx].amount = parseFloat(e.target.value) || 0;
+                          setCreditsInput(updated);
+                        }}
+                        placeholder="Amount"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 text-sm"
+                      />
+                      <input
+                        type="text"
+                        value={credit.note}
+                        onChange={(e) => {
+                          const updated = [...creditsInput];
+                          updated[idx].note = e.target.value;
+                          setCreditsInput(updated);
+                        }}
+                        placeholder="Note (e.g., Glow Dollars, Early Bird)"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updated = creditsInput.filter((_, i) => i !== idx);
+                        setCreditsInput(updated);
+                      }}
+                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
+                      title="Remove credit"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+
+                {creditsInput.length === 0 && (
+                  <div className="text-center py-6 text-gray-500">
+                    No credits added. Click "Add Credit" to start.
+                  </div>
+                )}
               </div>
-              <div className="flex gap-4 mt-6">
+
+              {/* Add credit button */}
+              <button
+                onClick={() => setCreditsInput([...creditsInput, { amount: 0, note: '' }])}
+                className="w-full px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-all font-semibold mb-4"
+              >
+                + Add Credit
+              </button>
+
+              {/* Total preview */}
+              {creditsInput.length > 0 && (
+                <div className="bg-white/5 p-3 rounded-lg mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Total Credits:</span>
+                    <span className="text-purple-400 font-semibold">
+                      -${creditsInput.reduce((sum, c) => sum + (c.amount || 0), 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-4">
                 <button
                   onClick={() => {
-                    applyCustomCreditMutation.mutate({
+                    // Filter out empty credits
+                    const validCredits = creditsInput.filter(c => c.amount > 0);
+                    updateAdditionalCreditsMutation.mutate({
                       invoiceId: dbInvoice.id,
-                      creditAmount: otherCreditInput.amount,
-                      creditReason: otherCreditInput.reason || undefined,
+                      credits: validCredits,
                     });
                   }}
-                  disabled={applyCustomCreditMutation.isPending}
+                  disabled={updateAdditionalCreditsMutation.isPending}
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50"
                 >
-                  {applyCustomCreditMutation.isPending ? 'Saving...' : 'Save Credit'}
+                  {updateAdditionalCreditsMutation.isPending ? 'Saving...' : 'Save Credits'}
                 </button>
                 <button
                   onClick={() => {
-                    setOtherCreditInput({ amount: 0, reason: "" });
+                    setCreditsInput([]);
                     setShowCreditModal(false);
                   }}
                   className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors border border-white/20"
