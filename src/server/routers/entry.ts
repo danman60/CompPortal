@@ -128,10 +128,14 @@ export const entryRouter = router({
     .query(async ({ input }) => {
       const { studioId, competitionId } = input;
 
-      // First find the approved reservation (matches submitSummary logic at line 151)
+      // Find reservation in any valid state (approved through closed)
       const reservation = await prisma.reservations.findFirst({
-        where: { studio_id: studioId, competition_id: competitionId, status: 'approved' },
-        select: { id: true, spaces_confirmed: true },
+        where: {
+          studio_id: studioId,
+          competition_id: competitionId,
+          status: { notIn: ['pending', 'rejected', 'cancelled', 'waitlisted'] }
+        },
+        select: { id: true, spaces_confirmed: true, status: true },
       });
 
       if (!reservation) {
@@ -140,6 +144,24 @@ export const entryRouter = router({
           estimatedCost: 0,
           remainingTokens: 0,
           status: 'no_reservation',
+        };
+      }
+
+      // If reservation is already submitted (summarized, invoiced, closed), return that status
+      if (reservation.status !== 'approved') {
+        // Still count entries for display, but indicate summary is submitted
+        const entries = await prisma.competition_entries.findMany({
+          where: { reservation_id: reservation.id, status: { notIn: ['cancelled', 'withdrawn'] } },
+          select: { total_fee: true },
+        });
+        const totalRoutines = entries.length;
+        const estimatedCost = entries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0);
+        return {
+          totalRoutines,
+          estimatedCost,
+          remainingTokens: 0,
+          status: 'submitted', // Indicates summary already submitted
+          reservationStatus: reservation.status,
         };
       }
 
@@ -175,10 +197,18 @@ export const entryRouter = router({
           tenant_id: ctx.tenantId!,
           studio_id: studioId,
           competition_id: competitionId,
-          status: 'approved',
+          status: { notIn: ['pending', 'rejected', 'cancelled', 'waitlisted'] },
         },
-        select: { id: true },
+        select: { id: true, status: true },
       });
+
+      // Check if reservation is already past the approved stage (summary already submitted)
+      if (reservation && reservation.status !== 'approved') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Your summary has already been submitted. Current status: ${reservation.status}. If you need to make changes, please contact the Competition Director.`,
+        });
+      }
 
       const [studio, competition, entries] = await Promise.all([
         prisma.studios.findUnique({
