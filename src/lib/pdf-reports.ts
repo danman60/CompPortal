@@ -939,7 +939,8 @@ export function generateInvoicePDF(invoice: {
   yPos += 10;
 
   // Deposit (if applicable) - shown separately as payment, not deducted from invoice
-  const depositAmount = (invoice.summary as any).depositAmount || 0;
+  // Check reservation first (backend puts it there), then summary (InvoiceDetail adds it there)
+  const depositAmount = invoice.reservation?.depositAmount || (invoice.summary as any).depositAmount || 0;
   if (depositAmount > 0) {
     doc.setFontSize(10);
     doc.setTextColor(COLORS.textLight);
