@@ -107,10 +107,14 @@ export const invoiceRouter = router({
       const subtotal = parseFloat(invoice.subtotal?.toString() || '0');
       const creditAmount = Number(invoice.credit_amount || 0);
       const otherCreditAmount = Number(invoice.other_credit_amount || 0);
+      // Sum additional_credits array (glow dollars, etc.)
+      const additionalCreditsSum = Array.isArray(invoice.additional_credits)
+        ? (invoice.additional_credits as Array<{ amount: number }>).reduce((sum, c) => sum + (c.amount || 0), 0)
+        : 0;
       const taxRate = parseFloat(invoice.tax_rate?.toString() || '0.13') / 100;
       // Tax is calculated AFTER all credits are applied
-      const afterAllCredits = subtotal - creditAmount - otherCreditAmount;
-      const taxAmount = afterAllCredits * taxRate;
+      const afterAllCredits = subtotal - creditAmount - otherCreditAmount - additionalCreditsSum;
+      const taxAmount = afterAllCredits * taxRate; // taxRate already /100
       const totalAmount = afterAllCredits + taxAmount;
 
       return {
@@ -172,6 +176,7 @@ export const invoiceRouter = router({
         total: invoice.total,
         deposit_amount: invoice.deposit_amount,
         amount_due: invoice.amount_due,
+        additional_credits: invoice.additional_credits,
       };
     }),
 
@@ -1259,15 +1264,19 @@ export const invoiceRouter = router({
 
       const subtotal = Number(invoice.subtotal);
       const taxRate = Number(invoice.tax_rate);
+      const otherCreditAmount = Number(invoice.other_credit_amount || 0);
+      const additionalCreditsSum = Array.isArray(invoice.additional_credits)
+        ? (invoice.additional_credits as Array<{ amount: number }>).reduce((sum, c) => sum + (c.amount || 0), 0)
+        : 0;
 
       // Calculate discount amount
       const discountAmount = input.discountPercentage > 0
         ? (subtotal * input.discountPercentage) / 100
         : 0;
 
-      // Calculate new total: (subtotal - discount) * (1 + taxRate/100)
-      const afterDiscount = subtotal - discountAmount;
-      const newTotal = afterDiscount * (1 + taxRate / 100);
+      // Calculate new total: (subtotal - all credits) * (1 + taxRate/100)
+      const afterAllCredits = subtotal - discountAmount - otherCreditAmount - additionalCreditsSum;
+      const newTotal = afterAllCredits * (1 + taxRate / 100);
 
       // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
       const depositAmount = Number(invoice.deposit_amount || 0);
@@ -1327,9 +1336,12 @@ export const invoiceRouter = router({
       const subtotal = Number(invoice.subtotal);
       const taxRate = Number(invoice.tax_rate);
       const existingCreditAmount = Number(invoice.credit_amount || 0); // Percentage discount
+      const additionalCreditsSum = Array.isArray(invoice.additional_credits)
+        ? (invoice.additional_credits as Array<{ amount: number }>).reduce((sum, c) => sum + (c.amount || 0), 0)
+        : 0;
 
-      // Calculate new total: (subtotal - percentage_discount - other_credit) * (1 + taxRate/100)
-      const afterAllCredits = subtotal - existingCreditAmount - input.creditAmount;
+      // Calculate new total: (subtotal - percentage_discount - other_credit - additional_credits) * (1 + taxRate/100)
+      const afterAllCredits = subtotal - existingCreditAmount - input.creditAmount - additionalCreditsSum;
       const taxAmount = afterAllCredits * (taxRate / 100);
       const newTotal = afterAllCredits + taxAmount;
 
@@ -1396,9 +1408,9 @@ export const invoiceRouter = router({
       const taxRate = Number(invoice.tax_rate || 0);
       const existingCreditAmount = Number(invoice.credit_amount || 0); // Percentage discount
 
-      // Calculate new total: (subtotal - percentage_discount - additional_credits) * (1 + taxRate)
+      // Calculate new total: (subtotal - percentage_discount - additional_credits) * (1 + taxRate/100)
       const afterAllCredits = subtotal - existingCreditAmount - totalCredits;
-      const taxAmount = afterAllCredits * taxRate;
+      const taxAmount = afterAllCredits * (taxRate / 100);
       const newTotal = afterAllCredits + taxAmount;
 
       // Recalculate amount_due with deposit
@@ -1472,11 +1484,15 @@ export const invoiceRouter = router({
       // Recalculate subtotal and total from line items
       const subtotal = input.lineItems.reduce((sum, item) => sum + item.total, 0);
 
-      // Apply tax and discount (if any) to get correct total
+      // Apply tax and all credits to get correct total
       const creditAmount = Number(invoice.credit_amount || 0);
+      const otherCreditAmount = Number(invoice.other_credit_amount || 0);
+      const additionalCreditsSum = Array.isArray(invoice.additional_credits)
+        ? (invoice.additional_credits as Array<{ amount: number }>).reduce((sum, c) => sum + (c.amount || 0), 0)
+        : 0;
       const taxRate = Number(invoice.tax_rate || 13) / 100;
-      const afterDiscount = subtotal - creditAmount;
-      const newTotal = Number((afterDiscount * (1 + taxRate)).toFixed(2));
+      const afterAllCredits = subtotal - creditAmount - otherCreditAmount - additionalCreditsSum;
+      const newTotal = Number((afterAllCredits * (1 + taxRate)).toFixed(2));
 
       // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
       const depositAmount = Number(invoice.deposit_amount || 0);
