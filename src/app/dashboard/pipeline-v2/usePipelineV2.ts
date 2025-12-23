@@ -327,6 +327,7 @@ export function usePipelineV2() {
     invoice_sent: 4,
     paid_complete: 5,
     rejected: 6,
+    needs_attention: 7,
   };
 
   // Filter and sort reservations

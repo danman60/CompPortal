@@ -1644,7 +1644,7 @@ export const reservationRouter = router({
         invoiceStatus: invoice?.status || null,
         invoiceAmount: invoice?.total ? parseFloat(invoice.total.toString()) : null,
         invoiceAmountPaid: invoice?.amount_paid ? parseFloat(invoice.amount_paid.toString()) : null,
-        invoiceBalanceRemaining: invoice?.balance_remaining ? parseFloat(invoice.balance_remaining.toString()) : null,
+        invoiceBalanceRemaining: invoice?.balance_remaining != null ? parseFloat(invoice.balance_remaining.toString()) : null,
         invoiceSentAt: null, // Not available in schema
         invoicePaidAt: invoice?.paid_at || null,
         invoiceDueDate: null, // Not available in schema

@@ -42,6 +42,12 @@ const statusConfig: Record<
     textColor: 'text-gray-300',
     borderColor: 'border-gray-500/50',
   },
+  needs_attention: {
+    label: 'Needs Attention',
+    bgColor: 'bg-red-500/20',
+    textColor: 'text-red-300',
+    borderColor: 'border-red-500/50',
+  },
 };
 
 export function StatusBadge({ status }: PipelineStatusBadgeProps) {
