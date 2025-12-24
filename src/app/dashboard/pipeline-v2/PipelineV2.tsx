@@ -1,6 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 import { CollapsibleSection } from './CollapsibleSection';
 import { KPICards } from './KPICards';
@@ -29,6 +31,7 @@ interface PipelineV2Props {
   mutations: PipelineMutations;
   sort: SortState;
   handleSort: (field: SortField) => void;
+  refetch: () => Promise<unknown>;
 }
 
 export function PipelineV2({
@@ -43,7 +46,23 @@ export function PipelineV2({
   mutations,
   sort,
   handleSort,
+  refetch,
 }: PipelineV2Props) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    toast.loading('Refreshing...', { id: 'pipeline-refresh' });
+    try {
+      await refetch();
+      toast.success('Pipeline refreshed!', { id: 'pipeline-refresh' });
+    } catch {
+      toast.error('Failed to refresh', { id: 'pipeline-refresh' });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleStatusFilterClick = (status: DisplayStatus | null) => {
     setFilters({ ...filters, status });
   };
@@ -73,6 +92,15 @@ export function PipelineV2({
               <span className="text-sm text-purple-200/60">
                 {reservations.length} of {allReservations.length} studios
               </span>
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm text-purple-200 hover:text-white transition-all disabled:opacity-50"
+                title="Refresh pipeline data"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
             </div>
           </div>
         </div>

@@ -355,11 +355,29 @@ export default function AllInvoicesList() {
     return <SkeletonTable rows={5} />;
   }
 
+  const handleRefresh = async () => {
+    toast.loading('Refreshing...', { id: 'refresh' });
+    await refetch();
+    toast.success('Data refreshed!', { id: 'refresh' });
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <h3 className="text-xl font-bold text-white mb-4">Filters</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-white">Filters</h3>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm text-gray-300 hover:text-white transition-all"
+            title="Refresh data"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Competition Filter */}
           <div>

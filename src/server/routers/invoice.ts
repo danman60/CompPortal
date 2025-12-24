@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { guardInvoiceStatus } from '@/lib/guards/statusGuards';
 import { logger } from '@/lib/logger';
+import { isCompetitionDirector } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import {
@@ -71,7 +72,7 @@ export const invoiceRouter = router({
           competition_id: input.competitionId,
           ...(isStudioDirector && {
             status: {
-              in: ['SENT', 'PAID'],
+              in: ['SENT', 'PAID', 'sent', 'paid'], // Case-insensitive match
             },
           }),
         },
@@ -203,7 +204,7 @@ export const invoiceRouter = router({
             studio_id: studioId,
             competition_id: competitionId,
             status: {
-              in: ['SENT', 'PAID'],
+              in: ['SENT', 'PAID', 'sent', 'paid'], // Case-insensitive match
             },
           },
         });
@@ -361,7 +362,7 @@ export const invoiceRouter = router({
           studio_id: input.studioId,
           ...(isStudioDirector && {
             status: {
-              in: ['SENT', 'PAID'],
+              in: ['SENT', 'PAID', 'sent', 'paid'], // Case-insensitive match
             },
           }),
         },
@@ -466,6 +467,7 @@ export const invoiceRouter = router({
             province: true,
             email: true,
             phone: true,
+            is_test: true,
           },
         }),
         prisma.competitions.findMany({
@@ -572,6 +574,11 @@ export const invoiceRouter = router({
 
           // Skip if studio or competition not found
           if (!studio || !competition) {
+            return null;
+          }
+
+          // Competition Directors: hide test studios
+          if (isCompetitionDirector(ctx.userRole) && (studio as any).is_test === true) {
             return null;
           }
 
@@ -1469,8 +1476,8 @@ export const invoiceRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
       }
 
-      // 🛡️ GUARD: Prevent editing locked invoices
-      if (invoice.is_locked) {
+      // 🛡️ GUARD: Prevent SDs from editing locked invoices (CDs can always edit non-PAID)
+      if (invoice.is_locked && ctx.userRole === 'studio_director') {
         throw new Error('Cannot edit locked invoice. Invoice is locked after being sent.');
       }
 
@@ -2691,5 +2698,87 @@ export const invoiceRouter = router({
       });
 
       return payments;
+    }),
+
+  /**
+   * Create a new invoice from a voided one
+   */
+  createFromVoided: protectedProcedure
+    .input(z.object({
+      voidedInvoiceId: z.string().uuid(),
+      depositAmount: z.number().min(0).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || !['competition_director', 'super_admin'].includes(userProfile.role || '')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only Competition Directors can create invoices' });
+      }
+
+      const voidedInvoice = await prisma.invoices.findUnique({
+        where: { id: input.voidedInvoiceId },
+        include: { studios: true },
+      });
+
+      if (!voidedInvoice || voidedInvoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      if (voidedInvoice.status !== 'VOIDED' && voidedInvoice.status !== 'VOID') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Can only create from a voided invoice' });
+      }
+
+      const depositAmount = input.depositAmount ?? Number(voidedInvoice.deposit_amount || 0);
+      const total = Number(voidedInvoice.total || 0);
+      const amountDue = total - depositAmount;
+
+      const newInvoice = await prisma.invoices.create({
+        data: {
+          tenant_id: ctx.tenantId!,
+          studio_id: voidedInvoice.studio_id,
+          competition_id: voidedInvoice.competition_id,
+          reservation_id: voidedInvoice.reservation_id,
+          line_items: voidedInvoice.line_items || [],
+          subtotal: voidedInvoice.subtotal,
+          tax_rate: voidedInvoice.tax_rate,
+          total: voidedInvoice.total,
+          deposit_amount: depositAmount,
+          amount_due: amountDue,
+          amount_paid: 0,
+          balance_remaining: amountDue,
+          credit_amount: voidedInvoice.credit_amount,
+          credit_reason: voidedInvoice.credit_reason,
+          other_credit_amount: voidedInvoice.other_credit_amount,
+          other_credit_reason: voidedInvoice.other_credit_reason,
+          additional_credits: voidedInvoice.additional_credits || [],
+          status: 'DRAFT',
+          is_locked: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: voidedInvoice.studio_id,
+          tenantId: ctx.tenantId,
+          action: 'invoice.createdFromVoided',
+          entityType: 'invoice',
+          entityId: newInvoice.id,
+          details: { studio_name: voidedInvoice.studios?.name, voided_id: input.voidedInvoiceId },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      return {
+        success: true,
+        invoice: newInvoice,
+        message: `New DRAFT invoice created for ${voidedInvoice.studios?.name}`,
+      };
     }),
 });

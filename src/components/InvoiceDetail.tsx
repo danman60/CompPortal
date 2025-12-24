@@ -218,6 +218,28 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     },
   });
 
+  // Void invoice without reopening summary
+  const voidInvoiceMutation = trpc.invoice.voidInvoice.useMutation({
+    onSuccess: () => {
+      toast.success('Invoice voided. You can now create a new invoice.');
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to void invoice: ${error.message}`);
+    },
+  });
+
+  // Create new invoice from voided one
+  const createFromVoidedMutation = trpc.invoice.createFromVoided.useMutation({
+    onSuccess: () => {
+      toast.success('New invoice created!');
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create invoice: ${error.message}`);
+    },
+  });
+
   const handleReopenSummary = () => {
     if (!invoice?.reservation?.id) {
       toast.error('No reservation found for this invoice');
@@ -231,6 +253,17 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     reopenSummaryMutation.mutate({
       reservationId: invoice.reservation.id,
     });
+  };
+
+  const handleVoidInvoice = () => {
+    if (!dbInvoice) return;
+    if (!confirm('Void this invoice?\n\nThis will mark it as VOID. You can then create a new invoice.\n\nSummary stays closed. Continue?')) return;
+    voidInvoiceMutation.mutate({ invoiceId: dbInvoice.id });
+  };
+
+  const handleCreateFromVoided = () => {
+    if (!dbInvoice) return;
+    createFromVoidedMutation.mutate({ voidedInvoiceId: dbInvoice.id });
   };
 
   // Line items come from the invoice (either DB or generated)
@@ -322,6 +355,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const amountPaid = dbInvoice?.amount_paid ? parseFloat(dbInvoice.amount_paid.toString()) : 0;
   const balanceRemaining = dbInvoice?.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue;
   const hasPayments = amountPaid > 0;
+  const isVoided = dbInvoice?.status === 'VOIDED' || dbInvoice?.status === 'VOID';
 
   if (isLoading) {
     return (
@@ -343,7 +377,14 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 max-w-5xl mx-auto">
+    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 max-w-5xl mx-auto relative">
+      {/* VOID Watermark */}
+      {isVoided && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="text-red-500/30 font-bold text-[120px] transform -rotate-45">VOID</div>
+        </div>
+      )}
+
       {/* Manual Payment Banner */}
       <div className="bg-blue-500/20 border-2 border-blue-500/50 rounded-lg p-4 mb-6 flex items-center gap-3">
         <span className="text-2xl">💵</span>
@@ -352,6 +393,14 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           <p className="text-blue-200 text-sm">Payments are handled offline via e-transfer, check, or other methods. Online payment processing coming soon.</p>
         </div>
       </div>
+
+      {/* VOIDED Invoice Banner */}
+      {isVoided && (
+        <div className="bg-red-500/20 border-2 border-red-500/50 rounded-lg p-4 mb-6">
+          <p className="text-red-300 font-semibold">This Invoice Has Been Voided</p>
+          <p className="text-red-200 text-sm">Create a new invoice below.</p>
+        </div>
+      )}
 
       {/* Invoice Header */}
       <div className="flex justify-between items-start mb-8 pb-8 border-b border-white/20">
@@ -756,6 +805,40 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 <span>Invoice Paid - {dbInvoice.paidAt ? formatDate(dbInvoice.paidAt, true) : 'Recently'}</span>
               </div>
             )}
+            {isVoided && (
+              <div className="flex-1 bg-red-500/20 border-2 border-red-500/50 text-red-300 px-6 py-3 rounded-lg font-semibold text-center">
+                Invoice Voided
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Create New Invoice button (for voided invoices) */}
+        {isVoided && isCompetitionDirector && dbInvoice && (
+          <div className="mt-4">
+            <button
+              onClick={handleCreateFromVoided}
+              disabled={createFromVoidedMutation.isPending}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+            >
+              {createFromVoidedMutation.isPending ? 'Creating...' : 'Create New Invoice'}
+            </button>
+          </div>
+        )}
+
+        {/* Void Invoice Only button (for SENT invoices, keeps summary closed) */}
+        {dbInvoice && isCompetitionDirector && dbInvoice.status === 'SENT' && (
+          <div className="mt-4">
+            <button
+              onClick={handleVoidInvoice}
+              disabled={voidInvoiceMutation.isPending}
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+            >
+              {voidInvoiceMutation.isPending ? 'Voiding...' : 'Void Invoice Only'}
+            </button>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Void to make changes and create new invoice. Summary stays closed.
+            </p>
           </div>
         )}
 
