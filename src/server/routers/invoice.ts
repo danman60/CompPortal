@@ -407,10 +407,11 @@ export const invoiceRouter = router({
       z.object({
         competitionId: z.string().uuid().optional(),
         paymentStatus: z.string().optional(),
+        invoiceStatus: z.enum(['DRAFT', 'SENT', 'PAID', 'VOIDED']).optional(),
       }).optional()
     )
     .query(async ({ ctx, input }) => {
-      const { competitionId, paymentStatus } = input ?? {};
+      const { competitionId, paymentStatus, invoiceStatus } = input ?? {};
 
       // Super Admin gets cross-tenant invoices, others get tenant-filtered
       const isSuperAdmin = ctx.userRole === 'super_admin';
@@ -584,6 +585,11 @@ export const invoiceRouter = router({
 
           // Apply payment status filter
           if (paymentStatus && reservation?.payment_status !== paymentStatus) {
+            return null;
+          }
+
+          // Apply invoice status filter
+          if (invoiceStatus && existingInvoice?.status !== invoiceStatus) {
             return null;
           }
 

@@ -19,6 +19,7 @@ export default function AllInvoicesList() {
   // Initialize filters from URL query parameters
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Bulk selection state
@@ -41,12 +42,18 @@ export default function AllInvoicesList() {
     if (paymentStatus) {
       setPaymentStatusFilter(paymentStatus);
     }
+    // Also support 'status' param for invoice status (from dashboard badges)
+    const invoiceStatus = searchParams.get('status');
+    if (invoiceStatus) {
+      setInvoiceStatusFilter(invoiceStatus);
+    }
   }, [searchParams]);
 
   // Fetch all invoices with optional filters
   const { data, isLoading, dataUpdatedAt, refetch } = trpc.invoice.getAllInvoices.useQuery({
     competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
     paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+    invoiceStatus: invoiceStatusFilter !== 'all' ? (invoiceStatusFilter as 'DRAFT' | 'SENT' | 'PAID' | 'VOIDED') : undefined,
   });
 
   // Update lastUpdated when data changes
@@ -69,6 +76,7 @@ export default function AllInvoicesList() {
       const previousData = utils.invoice.getAllInvoices.getData({
         competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
         paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+        invoiceStatus: invoiceStatusFilter !== 'all' ? (invoiceStatusFilter as 'DRAFT' | 'SENT' | 'PAID' | 'VOIDED') : undefined,
       });
 
       // Optimistically update the cache
@@ -76,6 +84,7 @@ export default function AllInvoicesList() {
         {
           competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
           paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+          invoiceStatus: invoiceStatusFilter !== 'all' ? (invoiceStatusFilter as 'DRAFT' | 'SENT' | 'PAID' | 'VOIDED') : undefined,
         },
         (old) => {
           if (!old) return old;
@@ -109,6 +118,7 @@ export default function AllInvoicesList() {
           {
             competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
             paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+            invoiceStatus: invoiceStatusFilter !== 'all' ? (invoiceStatusFilter as 'DRAFT' | 'SENT' | 'PAID' | 'VOIDED') : undefined,
           },
           context.previousData
         );
@@ -378,7 +388,7 @@ export default function AllInvoicesList() {
             Refresh
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Competition Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -395,6 +405,24 @@ export default function AllInvoicesList() {
                   {comp.name} ({comp.year})
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Invoice Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Invoice Status
+            </label>
+            <select
+              value={invoiceStatusFilter}
+              onChange={(e) => setInvoiceStatusFilter(e.target.value)}
+              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="all" className="bg-gray-900 text-white">All Statuses</option>
+              <option value="DRAFT" className="bg-gray-900 text-white">Draft</option>
+              <option value="SENT" className="bg-gray-900 text-white">Sent</option>
+              <option value="PAID" className="bg-gray-900 text-white">Paid</option>
+              <option value="VOIDED" className="bg-gray-900 text-white">Voided</option>
             </select>
           </div>
 
@@ -587,14 +615,15 @@ export default function AllInvoicesList() {
                       <div className="text-6xl mb-4">📋</div>
                       <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
                       <p className="text-gray-400 mb-4">
-                        {paymentStatusFilter !== 'all'
-                          ? `No ${paymentStatusFilter} invoices match your filters.`
+                        {paymentStatusFilter !== 'all' || invoiceStatusFilter !== 'all'
+                          ? `No invoices match your filters.`
                           : 'Invoices will appear here once studios create reservations.'}
                       </p>
-                      {paymentStatusFilter !== 'all' || selectedCompetition !== 'all' ? (
+                      {paymentStatusFilter !== 'all' || invoiceStatusFilter !== 'all' || selectedCompetition !== 'all' ? (
                         <button
                           onClick={() => {
                             setPaymentStatusFilter('all');
+                            setInvoiceStatusFilter('all');
                             setSelectedCompetition('all');
                           }}
                           className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-all border border-purple-400/30"
