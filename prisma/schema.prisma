@@ -1249,6 +1249,7 @@ model invoice_payments {
   recorded_by      String        @db.Uuid
   created_at       DateTime      @default(now()) @db.Timestamp(6)
   updated_at       DateTime      @default(now()) @db.Timestamp(6)
+  payment_type     String?       @default("payment") @db.VarChar(20)
   invoices         invoices      @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user_profiles    user_profiles @relation(fields: [recorded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tenants          tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -1515,6 +1516,7 @@ model studios {
   registration_order                    Int?
   code_assigned_at                      DateTime?                           @db.Timestamptz(6)
   code_assigned_by                      String?                             @db.Uuid
+  is_test                               Boolean?                            @default(false)
   account_recovery_tokens               account_recovery_tokens[]
   activity_logs                         activity_logs[]
   classification_exception_requests     classification_exception_requests[]
