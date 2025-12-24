@@ -2,9 +2,31 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
+
+/**
+ * Valid reservation statuses - used for validation and consistency
+ * - pending: Awaiting CD approval
+ * - approved: CD approved, awaiting SD summary submission
+ * - rejected: CD rejected the reservation
+ * - cancelled: Reservation cancelled
+ * - summarized: SD submitted summary, ready for invoice
+ * - invoiced: Invoice created for this reservation
+ * - closed: Invoice paid, reservation complete
+ */
+export const VALID_RESERVATION_STATUSES = [
+  'pending',
+  'approved',
+  'rejected',
+  'cancelled',
+  'summarized',
+  'invoiced',
+  'closed',
+] as const;
+
+export type ReservationStatus = typeof VALID_RESERVATION_STATUSES[number];
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
-import { isSuperAdmin } from '@/lib/auth-utils';
+import { isSuperAdmin, isCompetitionDirector } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
@@ -151,6 +173,16 @@ export const reservationRouter = router({
 
       if (paymentStatus) {
         where.payment_status = paymentStatus;
+      }
+
+      // Competition Directors: hide test studios from reservations list
+      if (isCompetitionDirector(ctx.userRole)) {
+        where.studios = {
+          OR: [
+            { is_test: false },
+            { is_test: null },
+          ],
+        };
       }
 
       const [reservations, total, competitions] = await Promise.all([
@@ -1487,6 +1519,9 @@ export const reservationRouter = router({
             }
           }
           return 'needs_attention'; // invoiced status but no invoice
+        case 'closed':
+          // Reservation is complete - invoice paid
+          return 'paid_complete';
         default: return 'needs_attention';
       }
     };
@@ -1502,7 +1537,8 @@ export const reservationRouter = router({
       }
       // Skip status mismatch check for voided invoices - treat as no invoice
       const isVoidedInvoice = invoice?.status === 'VOID' || invoice?.status === 'VOIDED';
-      if (invoice && !isVoidedInvoice && status !== 'invoiced' && status !== 'summarized') {
+      // Valid statuses when invoice exists: invoiced, summarized, closed
+      if (invoice && !isVoidedInvoice && status !== 'invoiced' && status !== 'summarized' && status !== 'closed') {
         return 'STATUS_MISMATCH: Invoice exists but reservation status is not invoiced';
       }
       // Don't flag voided invoices as issues - they're ready for new invoice
@@ -1515,6 +1551,13 @@ export const reservationRouter = router({
         tenant_id: ctx.tenantId!,
         status: {
           notIn: ['cancelled', 'rejected'],
+        },
+        // Hide test studios from CD pipeline view
+        studios: {
+          OR: [
+            { is_test: false },
+            { is_test: null },
+          ],
         },
       },
       select: {
