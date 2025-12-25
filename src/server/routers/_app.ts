@@ -40,6 +40,7 @@ import { classificationRequestRouter } from './classificationRequest';
 import { importSessionRouter } from './importSession';
 import { accountRecoveryRouter } from './accountRecovery';
 import { musicNotificationRouter } from './musicNotification';
+import { mediaRouter } from './media';
 
 /**
  * Main tRPC router
@@ -88,6 +89,7 @@ export const appRouter = router({
   accountRecovery: accountRecoveryRouter,
   feedback: feedbackRouter,
   musicNotification: musicNotificationRouter,
+  media: mediaRouter,
 });
 
 // Export type definition of API
