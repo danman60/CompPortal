@@ -783,6 +783,8 @@ export const schedulingRouter = router({
           entry_number: true, // V4: Sequential entry number
           is_scheduled: true, // V4: Scheduled flag (required for isScheduled field)
           routine_length_minutes: true, // V4: Routine duration
+          routine_length_seconds: true, // V4: Routine duration (seconds part)
+          extended_time_requested: true, // V4: Extended time flag
           created_at: true,
           has_studio_requests: true, // SD notes flag for blue glow
           scheduling_notes: true, // SD notes text for tooltip
@@ -896,7 +898,19 @@ export const schedulingRouter = router({
           ageGroupName: routine.age_groups.name,
           entrySizeId: routine.entry_size_category_id,
           entrySizeName: routine.entry_size_categories.name,
-          duration: routine.routine_length_minutes || 3, // Use actual routine length or default 3 min
+          // Calculate duration: Use extended time if requested, otherwise default by entry size
+          duration: (() => {
+            // If extended time is requested and has duration set, use that
+            if (routine.extended_time_requested && (routine.routine_length_minutes || routine.routine_length_seconds)) {
+              const totalSeconds = (routine.routine_length_minutes || 0) * 60 + (routine.routine_length_seconds || 0);
+              return Math.round(totalSeconds / 60) || 3; // Round to nearest minute, fallback to 3
+            }
+            // Otherwise use defaults based on entry size
+            const sizeName = routine.entry_size_categories?.name?.toLowerCase() || '';
+            if (sizeName.includes('solo')) return 3;
+            if (sizeName.includes('production') || sizeName.includes('line')) return 5;
+            return 4; // Groups (duet/trio/small/large) default to 4
+          })(),
           routineAge: routine.routine_age, // Final selected age for routine
           participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
           isScheduled: routine.is_scheduled === true, // V4: Use actual is_scheduled column (not performance_date)
