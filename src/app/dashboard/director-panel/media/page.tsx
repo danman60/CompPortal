@@ -49,8 +49,8 @@ export default function CDMediaDashboardPage() {
   // Queries
   const { data: competitions, isLoading: competitionsLoading } = trpc.competition.getAll.useQuery();
 
-  const { data: mediaPackages, isLoading: packagesLoading, refetch: refetchPackages } =
-    trpc.media.getPackagesByCompetition.useQuery(
+  const { data: entries, isLoading: entriesLoading, refetch: refetchEntries } =
+    trpc.media.getEntriesWithMedia.useQuery(
       { competitionId: selectedCompetitionId },
       { enabled: !!selectedCompetitionId }
     );
@@ -71,17 +71,24 @@ export default function CDMediaDashboardPage() {
   // Select entry and load its video URLs
   const handleSelectEntry = useCallback((entryId: string) => {
     setSelectedEntryId(entryId);
-    // Find the package and load video URLs
-    const pkg = mediaPackages?.find(p => p.entry_id === entryId);
-    if (pkg) {
+    // Find the entry and load video URLs from its media package
+    const entry = entries?.find(e => e.id === entryId);
+    if (entry?.mediaPackage) {
       setVideoUrls({
-        performance: pkg.performance_video_url || '',
-        judge1: pkg.judge1_video_url || '',
-        judge2: pkg.judge2_video_url || '',
-        judge3: pkg.judge3_video_url || '',
+        performance: entry.mediaPackage.performance_video_url || '',
+        judge1: entry.mediaPackage.judge1_video_url || '',
+        judge2: entry.mediaPackage.judge2_video_url || '',
+        judge3: entry.mediaPackage.judge3_video_url || '',
+      });
+    } else {
+      setVideoUrls({
+        performance: '',
+        judge1: '',
+        judge2: '',
+        judge3: '',
       });
     }
-  }, [mediaPackages]);
+  }, [entries]);
 
   // Upload single file
   const uploadFile = useCallback(async (file: File, entryId: string) => {
@@ -203,8 +210,8 @@ export default function CDMediaDashboardPage() {
     }
 
     refetchSelectedPackage();
-    refetchPackages();
-  }, [selectedEntryId, uploadFile, refetchSelectedPackage, refetchPackages]);
+    refetchEntries();
+  }, [selectedEntryId, uploadFile, refetchSelectedPackage, refetchEntries]);
 
   // Drag and drop handlers
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -231,11 +238,11 @@ export default function CDMediaDashboardPage() {
       await deletePhotoMutation.mutateAsync({ photoId });
       toast.success('Photo deleted');
       refetchSelectedPackage();
-      refetchPackages();
+      refetchEntries();
     } catch {
       toast.error('Failed to delete photo');
     }
-  }, [deletePhotoMutation, refetchSelectedPackage, refetchPackages]);
+  }, [deletePhotoMutation, refetchSelectedPackage, refetchEntries]);
 
   // Update video URL
   const handleUpdateVideoUrl = useCallback(async (
@@ -251,11 +258,11 @@ export default function CDMediaDashboardPage() {
         videoUrl: url || null,
       });
       toast.success('Video URL updated');
-      refetchPackages();
+      refetchEntries();
     } catch {
       toast.error('Failed to update video URL');
     }
-  }, [selectedPackage?.id, updateVideoUrlMutation, refetchPackages]);
+  }, [selectedPackage?.id, updateVideoUrlMutation, refetchEntries]);
 
   // Update package status
   const handleUpdateStatus = useCallback(async (
@@ -269,12 +276,12 @@ export default function CDMediaDashboardPage() {
         status,
       });
       toast.success(`Status updated to ${status}`);
-      refetchPackages();
+      refetchEntries();
       refetchSelectedPackage();
     } catch {
       toast.error('Failed to update status');
     }
-  }, [selectedPackage?.id, updateStatusMutation, refetchPackages, refetchSelectedPackage]);
+  }, [selectedPackage?.id, updateStatusMutation, refetchEntries, refetchSelectedPackage]);
 
   const competitionsList = competitions?.competitions || [];
   const selectedCompetition = competitionsList.find(c => c.id === selectedCompetitionId);
@@ -324,39 +331,39 @@ export default function CDMediaDashboardPage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Entries ({mediaPackages?.length || 0})
+                  Entries ({entries?.length || 0})
                 </h2>
 
-                {packagesLoading ? (
+                {entriesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
                   </div>
-                ) : mediaPackages && mediaPackages.length > 0 ? (
+                ) : entries && entries.length > 0 ? (
                   <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                    {mediaPackages.map((pkg) => (
+                    {entries.map((entry) => (
                       <button
-                        key={pkg.id}
-                        onClick={() => handleSelectEntry(pkg.entry_id!)}
+                        key={entry.id}
+                        onClick={() => handleSelectEntry(entry.id)}
                         className={`w-full p-3 rounded-lg text-left transition-colors ${
-                          selectedEntryId === pkg.entry_id
+                          selectedEntryId === entry.id
                             ? 'bg-purple-50 border-2 border-purple-500'
                             : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
                         }`}
                       >
                         <div className="text-gray-900 font-medium text-sm">
-                          #{pkg.entry_number} - {pkg.competition_entries?.title || 'Untitled'}
+                          #{entry.entry_number} - {entry.title || 'Untitled'}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-gray-500">
-                            {pkg.photo_count} photos
+                            {entry.mediaPackage?.photo_count || 0} photos
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded ${
-                            pkg.status === 'published' ? 'bg-green-100 text-green-700' :
-                            pkg.status === 'ready' ? 'bg-blue-100 text-blue-700' :
-                            pkg.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                            entry.mediaPackage?.status === 'published' ? 'bg-green-100 text-green-700' :
+                            entry.mediaPackage?.status === 'ready' ? 'bg-blue-100 text-blue-700' :
+                            entry.mediaPackage?.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
                             'bg-gray-100 text-gray-600'
                           }`}>
-                            {pkg.status}
+                            {entry.mediaPackage?.status || 'no media'}
                           </span>
                         </div>
                       </button>

@@ -143,6 +143,54 @@ export const mediaRouter = router({
     }),
 
   /**
+   * Get all competition entries with their media packages (for CD upload view)
+   * This returns ALL entries, not just those with existing media packages
+   */
+  getEntriesWithMedia: adminProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant not found' });
+      }
+
+      // Query entries directly, with optional media package info
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+        },
+        select: {
+          id: true,
+          entry_number: true,
+          title: true,
+          dancer_names: true,
+          media_packages: {
+            select: {
+              id: true,
+              status: true,
+              photo_count: true,
+              performance_video_url: true,
+              judge1_video_url: true,
+              judge2_video_url: true,
+              judge3_video_url: true,
+            },
+          },
+        },
+        orderBy: {
+          entry_number: 'asc',
+        },
+      });
+
+      // Transform to include mediaPackage as a single object (or null)
+      return entries.map(entry => ({
+        ...entry,
+        mediaPackage: entry.media_packages[0] || null,
+      }));
+    }),
+
+  /**
    * Generate signed upload URL for a photo
    */
   getPhotoUploadUrl: adminProcedure
