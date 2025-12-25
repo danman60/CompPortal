@@ -314,7 +314,8 @@ export default function CDMediaDashboardPage() {
               setSelectedCompetitionId(e.target.value);
               setSelectedEntryId(null);
             }}
-            className="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+            className="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none text-gray-900"
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
           >
             <option value="">Select a competition...</option>
             {competitionsList.map((comp) => (
@@ -336,7 +337,10 @@ export default function CDMediaDashboardPage() {
 
                 {entriesLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
+                    <div
+                      className="animate-spin rounded-full h-8 w-8 border-4 border-t-transparent"
+                      style={{ borderColor: primaryColor, borderTopColor: 'transparent' }}
+                    ></div>
                   </div>
                 ) : entries && entries.length > 0 ? (
                   <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -346,9 +350,13 @@ export default function CDMediaDashboardPage() {
                         onClick={() => handleSelectEntry(entry.id)}
                         className={`w-full p-3 rounded-lg text-left transition-colors ${
                           selectedEntryId === entry.id
-                            ? 'bg-purple-50 border-2 border-purple-500'
+                            ? 'border-2'
                             : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
                         }`}
+                        style={selectedEntryId === entry.id ? {
+                          backgroundColor: `${primaryColor}15`,
+                          borderColor: primaryColor
+                        } : undefined}
                       >
                         <div className="text-gray-900 font-medium text-sm">
                           #{entry.entry_number} - {entry.title || 'Untitled'}
@@ -411,9 +419,10 @@ export default function CDMediaDashboardPage() {
                             disabled={selectedPackage.status === status}
                             className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                               selectedPackage.status === status
-                                ? 'bg-purple-600 text-white'
+                                ? 'text-white'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
+                            style={selectedPackage.status === status ? { backgroundColor: primaryColor } : undefined}
                           >
                             {status.charAt(0).toUpperCase() + status.slice(1)}
                           </button>
@@ -434,9 +443,13 @@ export default function CDMediaDashboardPage() {
                       onClick={() => fileInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                         isDragging
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
+                          ? ''
+                          : 'border-gray-300 hover:bg-gray-50'
                       }`}
+                      style={isDragging ? {
+                        borderColor: primaryColor,
+                        backgroundColor: `${primaryColor}15`
+                      } : undefined}
                     >
                       <input
                         ref={fileInputRef}
@@ -468,10 +481,12 @@ export default function CDMediaDashboardPage() {
                                 <div
                                   className={`h-2 rounded-full transition-all ${
                                     item.status === 'error' ? 'bg-red-500' :
-                                    item.status === 'done' ? 'bg-green-500' :
-                                    'bg-purple-500'
+                                    item.status === 'done' ? 'bg-green-500' : ''
                                   }`}
-                                  style={{ width: `${item.progress}%` }}
+                                  style={{
+                                    width: `${item.progress}%`,
+                                    ...(item.status !== 'error' && item.status !== 'done' ? { backgroundColor: primaryColor } : {})
+                                  }}
                                 />
                               </div>
                             </div>
@@ -535,7 +550,8 @@ export default function CDMediaDashboardPage() {
                             value={videoUrls.performance}
                             onChange={(e) => setVideoUrls(prev => ({ ...prev, performance: e.target.value }))}
                             placeholder="https://..."
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none text-gray-900"
+                            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                           />
                           <button
                             onClick={() => handleUpdateVideoUrl('performance', videoUrls.performance)}
@@ -559,7 +575,8 @@ export default function CDMediaDashboardPage() {
                               value={videoUrls[judgeKey]}
                               onChange={(e) => setVideoUrls(prev => ({ ...prev, [judgeKey]: e.target.value }))}
                               placeholder="https://..."
-                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none text-gray-900"
+                              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                             />
                             <button
                               onClick={() => handleUpdateVideoUrl(judgeKey, videoUrls[judgeKey])}
