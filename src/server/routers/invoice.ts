@@ -112,7 +112,7 @@ export const invoiceRouter = router({
       const additionalCreditsSum = Array.isArray(invoice.additional_credits)
         ? (invoice.additional_credits as Array<{ amount: number }>).reduce((sum, c) => sum + (c.amount || 0), 0)
         : 0;
-      const taxRate = parseFloat(invoice.tax_rate?.toString() || '0.13') / 100;
+      const taxRate = parseFloat(invoice.tax_rate?.toString() || '13') / 100;
       // Tax is calculated AFTER all credits are applied
       const afterAllCredits = subtotal - creditAmount - otherCreditAmount - additionalCreditsSum;
       const taxAmount = afterAllCredits * taxRate; // taxRate already /100

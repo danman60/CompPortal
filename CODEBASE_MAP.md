@@ -1,8 +1,102 @@
 # CompPortal Codebase Map
 
-**Last Updated:** 2025-11-07
-**Build:** b53f109
+**Last Updated:** 2025-12-25
+**Main Branch Build:** e46a13b (Pipeline V2 + email branding)
+**Tester Branch Build:** 79c0fe2 (Extended time duration + Media module)
 **Purpose:** Quick reference for file locations, patterns, and workflows
+
+---
+
+## Branch Differences Summary
+
+| Feature | Main (Production) | Tester (Phase 2-3 Dev) |
+|---------|-------------------|------------------------|
+| Pipeline | V1 + V2 (14 files) | V1 only |
+| Email branding | ✅ All templates | ✅ All templates |
+| Schedule | V2 (merged from tester) | ✅ V2 + Extended Time Duration |
+| Game Day (live/) | - | ✅ 52KB unified page |
+| liveCompetition router | 620 lines | ✅ 3199 lines (5x more) |
+| Operating date | - | ✅ Game Day date selector |
+| AdjustSpacesModal | ✅ Capacity adjustments | - |
+| Media module | ✅ Merged from tester | ✅ SD Dashboard Media Section |
+| RoutineEditModal | - | ✅ CD admin routine editing |
+| SD Schedule View | - | ✅ View-only schedule for studios |
+| Mobile UX | - | ✅ Responsive SD pages |
+
+### Main Branch Production Features (CompPortal)
+
+**Pipeline V2** (`src/app/dashboard/pipeline-v2/`):
+- `page.tsx` - Pipeline V2 entry point (3267 lines)
+- `PipelineV2.tsx` - Main container component
+- `PipelineTable.tsx` - Desktop table view
+- `PipelineRow.tsx` - Table row component
+- `PipelineExpandedRow.tsx` - Expanded details (15418 lines)
+- `PipelineMobileCard.tsx` - Mobile card view (18023 lines)
+- `usePipelineV2.ts` - Data hook (14861 lines)
+- `AdjustSpacesModal.tsx` - Capacity adjustment modal
+- `KPICards.tsx`, `StatusBadge.tsx`, `BeadProgress.tsx`, `Filters.tsx`
+
+**Recent Production Fixes (Dec 2025):**
+- `e46a13b` - PullToRefresh mobile scroll fix
+- `80b2226` - Chatwoot SDK Sentry errors suppressed
+- `05bc451` - Tenant branding for all emails
+- `12d57e6` - Color fallback hydration fix
+- `c4205c2` - Dashboard hydration error fix
+
+### Tester Branch Phase 2-3 Features (CompPortal-tester)
+
+**Schedule V2** (`src/app/dashboard/director-panel/schedule-v2/`):
+- `page.tsx` - Complete Schedule V2 with drag-drop
+- Conflict detection, day isolation, batch operations
+- **Extended Time Duration** (79c0fe2) - Uses `extended_time_requested` + custom duration when available
+- Competition selector dropdown (41b52ea)
+- Assign Studio Codes button in Actions dropdown (d5ab64a)
+
+**SD Schedule View** (`src/app/dashboard/studio-schedule/`):
+- `page.tsx` - View-only schedule for Studio Directors (d6b4125)
+- Links from SD dashboard buttons
+- Read-only view of scheduled routines for their studio
+
+**RoutineEditModal** (`src/components/scheduling/RoutineEditModal.tsx`):
+- CD admin routine editing modal (462de4b)
+- Edit routine details from schedule page
+- Age tracking for intentional +1 bumps (e013ff6)
+
+**Media Module** (`src/app/dashboard/media/`):
+- SD Dashboard Media Section (6f87b34)
+- Media file upload and management
+- Merged to main via 4d121b4
+
+**Mobile UX Improvements** (Dec 2025):
+- Responsive SD pages (852f4b0, 626f950, 82807ad)
+- Submit button visibility fixes
+- Duplicate header fixes
+
+**Game Day Unified Page** (`src/app/dashboard/director-panel/live/`):
+- `page.tsx` - 52KB unified Tabulator/Backstage/Judge (3-panel layout)
+- Operating date selector for multi-day competitions
+- Music playback controls (play/pause/stop)
+- Backstage kiosk mode with fullscreen toggle
+- Real-time judge score visibility toggle
+
+**liveCompetition Router** (`src/server/routers/liveCompetition.ts`):
+- 3199 lines (vs 620 in main)
+- Fixed `schedule_sequence ASC` ordering (was `running_order`)
+- Fixed `status: { not: 'cancelled' }` filter (was `status: 'registered'`)
+- `setOperatingDate`, `getBackstageData`, `submitScore` procedures
+- Judge time remaining + other judges' scores features
+
+**Recent Tester Fixes (Dec 2025):**
+- `79c0fe2` - Extended time duration in scheduling
+- `4d121b4` - Merge Media module from main
+- `82807ad` - Mobile UX submit button visibility
+- `462de4b` - RoutineEditModal for CD admin
+- `e013ff6` - Age tracking for intentional +1 bumps
+- `50b4ace` - 5-routine tolerance for summary submission
+- `fb061ae` - Day start time immediate display update
+- `41b52ea` - Competition selector dropdown
+- `d5ab64a` - Assign Studio Codes in Actions dropdown
+- `d6b4125` - SD schedule view and dashboard links
 
 ---
 
@@ -87,18 +181,51 @@
 - `dance_categories` - Dance styles (e.g., Ballet, Jazz, Contemporary)
 - `entry_size_categories` - Group sizes (e.g., Solo, Duet/Trio, Small Group)
 
-### Phase 2 Tables (Scheduler - ~60% Complete)
+### Phase 2 Tables (Scheduling - LIVE on Tester)
 
-**Scheduling:**
-- `competition_sessions` - Time blocks for performances
-  - Key fields: id, competition_id, name, start_time, end_time, capacity, tenant_id
-  - 1:many with entries
+**Schedule Management:**
+- `schedule_blocks` - Breaks, awards, lunch, adjudication blocks
+  - Key fields: id, competition_id, performance_date, schedule_sequence, block_type, duration_minutes, tenant_id
+  - Block types: 'break', 'award', 'lunch', 'adjudication'
+  - 1:1 position in day's schedule sequence
 
-**Judging & Scoring:**
-- `judges` - Judge profiles
-- `scores` - Performance scores
-- `rankings` - Placement results
-- `awards` - Award assignments
+- `schedule_versions` - Version history for undo/redo
+  - Key fields: id, competition_id, version_number, snapshot_data, created_by, tenant_id
+  - Stores complete schedule state as JSON snapshot
+
+- `day_start_times` - Per-day start configuration
+  - Key fields: id, competition_id, performance_date, start_time, tenant_id
+  - Allows different start times per competition day
+
+**competition_entries (Phase 2 fields added):**
+- `performance_date` (DATE) - Which day entry performs
+- `schedule_sequence` (INT) - Order within the day (1, 2, 3...)
+- `entry_number` (INT) - Display number (#100, #101...)
+- `is_scheduled` (BOOLEAN) - Whether entry is on schedule
+- `dancer_names[]` (TEXT[]) - Denormalized for conflict detection
+- `conflict_count` (INT) - Number of conflicts with other entries
+- `conflicts_with_entry_ids[]` (UUID[]) - IDs of conflicting entries
+- `scheduled_start_time` (TIME) - Calculated start time
+
+**Judging & Scoring (Phase 3):**
+- `judges` - Judge profiles and assignments
+- `scores` - Individual judge score submissions
+- `rankings` - Placement results (calculated)
+- `awards` - Award assignments (special, overall)
+
+### Phase 3 Tables (Game Day - Backend Complete)
+
+**Live Competition State:**
+- `live_competition_state` - Real-time competition control
+  - Key fields: id, competition_id, tenant_id, competition_state, current_entry_id, current_entry_state, operating_date, day_number, session_number, playback_state, judges_can_see_scores
+  - States: 'active', 'paused', 'ended'
+  - Entry states: 'queued', 'performing', 'completed'
+  - Controls which day's routines to display via operating_date
+
+**competition_entries (Phase 3 fields):**
+- `live_status` (TEXT) - Runtime status ('queued', 'current', 'completed', 'scratched')
+- `music_file_url` (TEXT) - S3 URL for MP3 playback
+- `mp3_duration_ms` (INT) - Audio duration for countdown timer
 
 ### Key Relationships
 
@@ -162,13 +289,35 @@ tenants (root)
 | **testing** | `testing.ts` | Various test utilities | SA only | Development helpers |
 | **siteControl** | `site-control.ts` | pauseSite, unpauseSite | SA only | Maintenance mode |
 
-### Phase 2 Routers (~60% Complete)
+### Phase 2 Routers (Scheduling - LIVE)
 
 | Router | File | Key Procedures | Status | Notes |
 |--------|------|----------------|--------|-------|
-| **scheduling** | `scheduling.ts` | autoSchedule, detectConflicts, exportSchedule | Backend complete | Needs DnD UI |
-| **judges** | `judges.ts` | create, assign, getAll | Backend complete | Phase 2 |
-| **scoring** | `scoring.ts` | submitScore, calculateRankings | Backend complete | Phase 2 |
+| **scheduling** | `scheduling.ts` | saveSchedule, getSchedule, getUnscheduledEntries, exportPdf | LIVE | Drag-drop scheduler |
+| **scheduleBlock** | `scheduling.ts` | createBlock, updateBlock, deleteBlock | LIVE | Break/Award blocks |
+| **scheduleVersion** | `scheduling.ts` | saveVersion, getVersions, restoreVersion | LIVE | Undo/redo system |
+| **dayStartTime** | `scheduling.ts` | getDayStartTimes, setDayStartTime | LIVE | Per-day start times |
+
+**Extended Time Duration** (79c0fe2):
+- Location: `src/server/routers/scheduling.ts:785-787` (select fields)
+- Location: `src/server/routers/scheduling.ts:901-913` (duration IIFE)
+- Logic: When `extended_time_requested=true` AND custom duration set, uses `routine_length_minutes/seconds`
+- Fallback: Default durations by entry size (Solo=3min, Groups=4min, Lines=5min)
+
+### Phase 3 Routers (Game Day - Backend Complete)
+
+| Router | File | Key Procedures | Status | Notes |
+|--------|------|----------------|--------|-------|
+| **liveCompetition** | `liveCompetition.ts` | getLiveState, getLineup, setCurrentEntry, advanceEntry | Backend | Tabulator control |
+| **judges** | `judges.ts` | create, assign, getAll, updateStatus | Backend | Judge management |
+| **scoring** | `scoring.ts` | submitScore, getScores, calculateRankings | Backend | Score submission |
+
+### Phase 3 APIs (Public Routes)
+
+| Route | File | Purpose | Auth | Notes |
+|-------|------|---------|------|-------|
+| `/api/backstage` | `api/backstage/route.ts` | Public backstage display | None (public) | Shows upcoming routines |
+| `/api/audio/manifest` | `api/audio/manifest/route.ts` | MP3 download list | Token-based | Pre-downloads audio |
 
 ### Utility Routers
 
@@ -546,6 +695,11 @@ const navItems = [
 | **Email templates** | `src/lib/emailTemplates.ts` | Lines 123-167 |
 | **PDF generation** | `src/lib/invoicePdfGenerator.ts` | Lines 234-456 |
 | **Scheduler** | `src/server/routers/scheduling.ts` | Phase 2 (1,104 lines) |
+| **Extended time duration** | `src/server/routers/scheduling.ts` | Lines 785-787, 901-913 |
+| **RoutineEditModal** | `src/components/scheduling/RoutineEditModal.tsx` | CD routine editing |
+| **ActionsDropdown** | `src/components/scheduling/ActionsDropdown.tsx` | Assign Studio Codes, Reset, etc. |
+| **SD Schedule view** | `src/app/dashboard/studio-schedule/page.tsx` | View-only schedule for SD |
+| **Media upload** | `src/app/dashboard/media/page.tsx` | SD Dashboard Media Section |
 | **Testing tools** | `src/server/routers/superAdmin.ts` | SA only |
 | **Feedback system** | `src/server/routers/feedback.ts` | All users submit |
 
@@ -847,6 +1001,6 @@ ORDER BY ris.created_at DESC;
 
 ---
 
-**Last Updated:** 2025-11-07
-**Build:** b53f109
+**Last Updated:** 2025-12-13
+**Build:** Latest (Phase 2-3 updates)
 **Maintained by:** Claude Code (with user review)
