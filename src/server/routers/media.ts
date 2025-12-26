@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { logger } from '@/lib/logger';
+import sharp from 'sharp';
 
 /**
  * Media Router - Handles media packages, photos, and video management
@@ -583,5 +584,216 @@ export const mediaRouter = router({
       });
 
       return updated;
+    }),
+
+  /**
+   * Generate thumbnail for a photo
+   * Downloads original, creates 200x200 WebP thumbnail, uploads to storage, updates DB
+   */
+  generateThumbnail: adminProcedure
+    .input(z.object({
+      photoId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant not found' });
+      }
+
+      // Get photo with package to verify tenant access
+      const photo = await prisma.media_photos.findUnique({
+        where: { id: input.photoId },
+        include: {
+          media_packages: {
+            select: {
+              id: true,
+              tenant_id: true,
+            },
+          },
+        },
+      });
+
+      if (!photo || photo.media_packages.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Photo not found' });
+      }
+
+      // Skip if thumbnail already exists
+      if (photo.thumbnail_url) {
+        return { success: true, thumbnail_url: photo.thumbnail_url, skipped: true };
+      }
+
+      if (!photo.storage_url) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Photo has no storage URL' });
+      }
+
+      try {
+        // Download original image from Supabase Storage
+        const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
+          .from('media')
+          .download(photo.storage_url);
+
+        if (downloadError || !downloadData) {
+          logger.error('Failed to download original image', { error: downloadError, path: photo.storage_url });
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to download original image' });
+        }
+
+        // Convert Blob to Buffer
+        const arrayBuffer = await downloadData.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Generate 200x200 WebP thumbnail using Sharp
+        const thumbnailBuffer = await sharp(buffer)
+          .resize(200, 200, {
+            fit: 'cover',
+            position: 'center',
+          })
+          .webp({ quality: 80 })
+          .toBuffer();
+
+        // Generate thumbnail storage path (same folder as original, with _thumb suffix)
+        const originalPath = photo.storage_url;
+        const pathParts = originalPath.split('/');
+        const filename = pathParts.pop() || '';
+        const filenameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+        const thumbnailPath = [...pathParts, `${filenameWithoutExt}_thumb.webp`].join('/');
+
+        // Upload thumbnail to Supabase Storage
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('media')
+          .upload(thumbnailPath, thumbnailBuffer, {
+            contentType: 'image/webp',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          logger.error('Failed to upload thumbnail', { error: uploadError, path: thumbnailPath });
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to upload thumbnail' });
+        }
+
+        // Update photo record with thumbnail URL
+        await prisma.media_photos.update({
+          where: { id: input.photoId },
+          data: { thumbnail_url: thumbnailPath },
+        });
+
+        logger.info('Thumbnail generated successfully', {
+          photoId: input.photoId,
+          thumbnailPath,
+          originalSize: buffer.length,
+          thumbnailSize: thumbnailBuffer.length,
+        });
+
+        return { success: true, thumbnail_url: thumbnailPath, skipped: false };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        logger.error('Thumbnail generation failed', { error: error instanceof Error ? error : new Error(String(error)), photoId: input.photoId });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Thumbnail generation failed' });
+      }
+    }),
+
+  /**
+   * Generate thumbnails for all photos in a package (batch operation)
+   */
+  generatePackageThumbnails: adminProcedure
+    .input(z.object({
+      packageId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant not found' });
+      }
+
+      // Verify package belongs to tenant
+      const pkg = await prisma.media_packages.findFirst({
+        where: {
+          id: input.packageId,
+          tenant_id: ctx.tenantId,
+        },
+      });
+
+      if (!pkg) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
+      }
+
+      // Get all photos without thumbnails
+      const photos = await prisma.media_photos.findMany({
+        where: {
+          media_package_id: input.packageId,
+          thumbnail_url: null,
+          
+        },
+      });
+
+      if (photos.length === 0) {
+        return { success: true, generated: 0, total: 0, message: 'All photos already have thumbnails' };
+      }
+
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (const photo of photos) {
+        try {
+          // Download original
+          const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
+            .from('media')
+            .download(photo.storage_url!);
+
+          if (downloadError || !downloadData) {
+            errors.push(`Photo ${photo.id}: Download failed`);
+            continue;
+          }
+
+          // Convert and generate thumbnail
+          const arrayBuffer = await downloadData.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          const thumbnailBuffer = await sharp(buffer)
+            .resize(200, 200, { fit: 'cover', position: 'center' })
+            .webp({ quality: 80 })
+            .toBuffer();
+
+          // Generate thumbnail path
+          const pathParts = photo.storage_url!.split('/');
+          const filename = pathParts.pop() || '';
+          const filenameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+          const thumbnailPath = [...pathParts, `${filenameWithoutExt}_thumb.webp`].join('/');
+
+          // Upload thumbnail
+          const { error: uploadError } = await supabaseAdmin.storage
+            .from('media')
+            .upload(thumbnailPath, thumbnailBuffer, {
+              contentType: 'image/webp',
+              upsert: true,
+            });
+
+          if (uploadError) {
+            errors.push(`Photo ${photo.id}: Upload failed`);
+            continue;
+          }
+
+          // Update DB
+          await prisma.media_photos.update({
+            where: { id: photo.id },
+            data: { thumbnail_url: thumbnailPath },
+          });
+
+          successCount++;
+        } catch (error) {
+          errors.push(`Photo ${photo.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      logger.info('Batch thumbnail generation complete', {
+        packageId: input.packageId,
+        total: photos.length,
+        success: successCount,
+        errors: errors.length,
+      });
+
+      return {
+        success: true,
+        generated: successCount,
+        total: photos.length,
+        errors: errors.length > 0 ? errors : undefined,
+      };
     }),
 });

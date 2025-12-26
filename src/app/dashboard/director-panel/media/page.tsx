@@ -10,6 +10,7 @@
  * - Bulk photo upload with drag-and-drop
  * - Video URL management
  * - Package status management
+ * - Thumbnail generation
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -34,6 +35,7 @@ export default function CDMediaDashboardPage() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState<Map<string, UploadingFile>>(new Map());
   const [isDragging, setIsDragging] = useState(false);
+  const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
   const [videoUrls, setVideoUrls] = useState<{
     performance: string;
     judge1: string;
@@ -67,6 +69,7 @@ export default function CDMediaDashboardPage() {
   const deletePhotoMutation = trpc.media.deletePhoto.useMutation();
   const updateVideoUrlMutation = trpc.media.updateVideoUrl.useMutation();
   const updateStatusMutation = trpc.media.updatePackageStatus.useMutation();
+  const generatePackageThumbnailsMutation = trpc.media.generatePackageThumbnails.useMutation();
 
   // Select entry and load its video URLs
   const handleSelectEntry = useCallback((entryId: string) => {
@@ -283,8 +286,31 @@ export default function CDMediaDashboardPage() {
     }
   }, [selectedPackage?.id, updateStatusMutation, refetchEntries, refetchSelectedPackage]);
 
+  // Generate thumbnails for all photos in package
+  const handleGenerateThumbnails = useCallback(async () => {
+    if (!selectedPackage?.id) return;
+
+    setIsGeneratingThumbnails(true);
+    try {
+      const result = await generatePackageThumbnailsMutation.mutateAsync({
+        packageId: selectedPackage.id,
+      });
+      if (result.success) {
+        toast.success(`Generated ${result.generated} thumbnail(s)`);
+        refetchSelectedPackage();
+      }
+    } catch (error) {
+      toast.error('Failed to generate thumbnails');
+    } finally {
+      setIsGeneratingThumbnails(false);
+    }
+  }, [selectedPackage?.id, generatePackageThumbnailsMutation, refetchSelectedPackage]);
+
   const competitionsList = competitions?.competitions || [];
   const selectedCompetition = competitionsList.find(c => c.id === selectedCompetitionId);
+
+  // Count photos without thumbnails
+  const photosWithoutThumbnails = selectedPackage?.photos?.filter((p: any) => !p.thumbnail_url) || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -433,7 +459,28 @@ export default function CDMediaDashboardPage() {
 
                   {/* Photo Upload Area */}
                   <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Photos</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Photos</h3>
+                      {photosWithoutThumbnails.length > 0 && (
+                        <button
+                          onClick={handleGenerateThumbnails}
+                          disabled={isGeneratingThumbnails}
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg text-white transition-colors disabled:opacity-50"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          {isGeneratingThumbnails ? (
+                            <>
+                              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              Generate Thumbnails ({photosWithoutThumbnails.length})
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
 
                     {/* Drop Zone */}
                     <div
@@ -517,6 +564,12 @@ export default function CDMediaDashboardPage() {
                               alt={photo.filename}
                               className="w-full h-full object-cover"
                             />
+                            {/* No thumbnail badge */}
+                            {!photo.thumbnail_url && (
+                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-orange-500 text-white text-xs rounded">
+                                No thumb
+                              </div>
+                            )}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <button
                                 onClick={() => handleDeletePhoto(photo.id)}
