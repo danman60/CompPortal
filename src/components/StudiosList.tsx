@@ -1159,11 +1159,15 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                               📧
                             </button>
                           )}
-                          {isCompetitionDirector && competitions.length > 0 && (
+                          {isCompetitionDirector && studio.reservations && studio.reservations.length > 0 && (
                             <button
-                              onClick={() => handleWithdraw(studio, competitions[0].id, competitions[0].name)}
+                              onClick={() => handleWithdraw(
+                                studio,
+                                studio.reservations[0].competition_id,
+                                studio.reservations[0].competitions?.name || 'Unknown Competition'
+                              )}
                               className="px-2 py-1 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 rounded text-xs border border-orange-400/30"
-                              title="Withdraw from competition"
+                              title={`Withdraw from ${studio.reservations[0].competitions?.name || 'competition'}`}
                             >
                               🚫
                             </button>

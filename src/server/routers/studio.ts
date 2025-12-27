@@ -371,6 +371,23 @@ export const studioRouter = router({
             reservations: true,
           },
         },
+        // Include active reservations for withdraw functionality
+        reservations: {
+          where: {
+            status: { not: 'cancelled' },
+          },
+          select: {
+            id: true,
+            competition_id: true,
+            status: true,
+            competitions: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         name: 'asc',
