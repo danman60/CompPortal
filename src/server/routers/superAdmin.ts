@@ -2047,7 +2047,7 @@ const schedulingProgressRouter = router({
       FROM competitions c
       INNER JOIN tenants t ON c.tenant_id = t.id
       LEFT JOIN competition_entries ce ON ce.competition_id = c.id AND ce.status != 'cancelled'
-      WHERE c.status IN ('draft', 'scheduling', 'published')
+      WHERE c.status NOT IN ('cancelled', 'completed')
       GROUP BY c.id, c.name, c.tenant_id, t.name
       HAVING COUNT(ce.id) > 0
       ORDER BY t.name, c.name
