@@ -161,13 +161,14 @@ export default function RoutineSummaries() {
               <th className="px-6 py-4 text-center text-sm font-semibold text-white">Routines</th>
               <th className="px-6 py-4 text-center text-sm font-semibold text-white">Status</th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-white">Total</th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-white">Balance</th>
               <th className="px-6 py-4 text-center text-sm font-semibold text-white">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredSummaries.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">
                   No routine submissions found
                 </td>
               </tr>
@@ -227,6 +228,15 @@ export default function RoutineSummaries() {
                       <div className="text-lg font-bold text-white">
                         ${summary.total_amount.toFixed(2)}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {summary.has_invoice ? (
+                        <div className={`text-lg font-bold ${(summary.invoice_balance_remaining || 0) === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          ${(summary.invoice_balance_remaining || 0).toFixed(2)}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">—</div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
@@ -342,7 +352,7 @@ export default function RoutineSummaries() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex justify-between mb-4">
+                <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-400">Routines</p>
                     <p className="text-2xl font-bold text-white">{summary.entry_count}</p>
@@ -350,9 +360,19 @@ export default function RoutineSummaries() {
                       <p className="text-xs text-gray-400">({summary.entries_unused} refunded)</p>
                     )}
                   </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400">Total</p>
+                    <p className="text-xl font-bold text-white">${summary.total_amount.toFixed(2)}</p>
+                  </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-400">Total Amount</p>
-                    <p className="text-2xl font-bold text-white">${summary.total_amount.toFixed(2)}</p>
+                    <p className="text-sm text-gray-400">Balance</p>
+                    {summary.has_invoice ? (
+                      <p className={`text-xl font-bold ${(summary.invoice_balance_remaining || 0) === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        ${(summary.invoice_balance_remaining || 0).toFixed(2)}
+                      </p>
+                    ) : (
+                      <p className="text-xl text-gray-500">—</p>
+                    )}
                   </div>
                 </div>
 
@@ -402,32 +422,38 @@ export default function RoutineSummaries() {
         )}
       </div>
 
-      {/* Summary Stats */}
+      {/* Financial Summary Stats */}
       {filteredSummaries.length > 0 && (
         <div className="mt-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
             <div>
-              <div className="text-sm text-gray-400 mb-1">Total Studios</div>
+              <div className="text-sm text-gray-400 mb-1">Studios</div>
               <div className="text-3xl font-bold text-white">
                 {filteredSummaries.length}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-400 mb-1">Total Routines</div>
+              <div className="text-sm text-gray-400 mb-1">Total Entries</div>
               <div className="text-3xl font-bold text-white">
                 {filteredSummaries.reduce((sum: number, s: any) => sum + s.entry_count, 0)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-400 mb-1">⏳ Still Editing</div>
-              <div className="text-3xl font-bold text-orange-400">
-                {filteredSummaries.filter((s: any) => s.status === 'editing').length}
+              <div className="text-sm text-gray-400 mb-1">Revenue (excl. HST)</div>
+              <div className="text-2xl font-bold text-white">
+                ${filteredSummaries.reduce((sum: number, s: any) => sum + (s.invoice_subtotal || 0), 0).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-400 mb-1">Awaiting Invoice</div>
-              <div className="text-3xl font-bold text-blue-400">
-                {filteredSummaries.filter((s: any) => s.status === 'summarized').length}
+              <div className="text-sm text-gray-400 mb-1">Revenue (incl. HST)</div>
+              <div className="text-2xl font-bold text-white">
+                ${filteredSummaries.reduce((sum: number, s: any) => sum + (s.invoice_total || 0), 0).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-400 mb-1">Outstanding Balance</div>
+              <div className={`text-2xl font-bold ${filteredSummaries.reduce((sum: number, s: any) => sum + (s.invoice_balance_remaining || 0), 0) === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ${filteredSummaries.reduce((sum: number, s: any) => sum + (s.invoice_balance_remaining || 0), 0).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>
