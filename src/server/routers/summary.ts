@@ -301,4 +301,234 @@ export const summaryRouter = router({
         };
       }
     }),
+
+  /**
+   * Submit summary on behalf of a studio (CD action)
+   * Replicates SD submission logic from entry.ts
+   * Phase 1 Spec: Lines 589-651 (summary submission workflow)
+   */
+  submitOnBehalf: adminProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get reservation with related data
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: true,
+          competitions: true,
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      // Verify tenant isolation
+      if (reservation.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access reservation from another tenant',
+        });
+      }
+
+      // Verify reservation is in 'approved' status (not already summarized/cancelled)
+      if (reservation.status !== 'approved') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot submit summary for reservation in '${reservation.status}' status. Only 'approved' reservations can be submitted.`,
+        });
+      }
+
+      // Get all draft entries for this reservation
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          reservation_id: input.reservationId,
+          status: 'draft',
+        },
+        select: {
+          id: true,
+          title: true,
+          category_id: true,
+          age_group_id: true,
+          classification_id: true,
+          entry_size_category_id: true,
+          entry_fee: true,
+          late_fee: true,
+          total_fee: true,
+          status: true,
+          reservation_id: true,
+          studio_id: true,
+          competition_id: true,
+          created_at: true,
+          updated_at: true,
+        },
+      });
+
+      const routineCount = entries.length;
+
+      // Validate that there are entries to submit
+      if (routineCount === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No draft entries found for this reservation. The studio needs to create routines first.',
+        });
+      }
+
+      // Calculate unused spaces
+      const originalSpaces = reservation.spaces_confirmed || 0;
+      const unusedSpaces = originalSpaces - routineCount;
+
+      // Allow 5-routine tolerance for edge cases
+      const OVERAGE_TOLERANCE = 5;
+      if (unusedSpaces < -OVERAGE_TOLERANCE) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot submit summary: ${routineCount} entries but only ${originalSpaces} approved spaces. The studio needs to withdraw ${Math.abs(unusedSpaces)} routines first.`,
+        });
+      }
+
+      // Wrap all database operations in a transaction
+      await prisma.$transaction(async (tx) => {
+        // Idempotency check - prevent duplicate summary submissions
+        const existingSummary = await tx.summaries.findUnique({
+          where: { reservation_id: input.reservationId },
+        });
+
+        if (existingSummary) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Summary has already been submitted for this reservation.',
+          });
+        }
+
+        // Update reservation status to 'summarized'
+        await tx.reservations.update({
+          where: { id: input.reservationId },
+          data: {
+            spaces_confirmed: routineCount,
+            status: 'summarized',
+            is_closed: true,
+            updated_at: new Date(),
+          },
+        });
+
+        // Refund unused spaces if any
+        if (unusedSpaces > 0) {
+          const competition = await tx.competitions.findUnique({
+            where: { id: reservation.competition_id! },
+            select: {
+              tenant_id: true,
+              available_reservation_tokens: true,
+              total_reservation_tokens: true,
+            },
+          });
+
+          if (competition) {
+            const available = competition.available_reservation_tokens || 0;
+            const total = competition.total_reservation_tokens || 0;
+
+            if (available + unusedSpaces <= total) {
+              await tx.competitions.update({
+                where: { id: reservation.competition_id! },
+                data: {
+                  available_reservation_tokens: {
+                    increment: unusedSpaces,
+                  },
+                },
+              });
+
+              // Create audit trail
+              await tx.capacity_ledger.create({
+                data: {
+                  tenant_id: competition.tenant_id,
+                  competition_id: reservation.competition_id!,
+                  reservation_id: input.reservationId,
+                  change_amount: unusedSpaces,
+                  reason: 'summary_refund_by_cd',
+                  created_by: ctx.userId,
+                },
+              });
+            }
+          }
+        }
+
+        // Create summary record
+        const summary = await tx.summaries.create({
+          data: {
+            tenant_id: ctx.tenantId!,
+            reservation_id: input.reservationId,
+            entries_used: routineCount,
+            entries_unused: Math.max(0, unusedSpaces),
+            submitted_at: new Date(),
+          },
+        });
+
+        // Create entry snapshots
+        const summaryEntriesData = entries.map((entry) => {
+          const snapshot = {
+            ...entry,
+            created_at: entry.created_at?.toISOString(),
+            updated_at: entry.updated_at?.toISOString(),
+          };
+
+          return {
+            tenant_id: ctx.tenantId!,
+            summary_id: summary.id,
+            entry_id: entry.id,
+            snapshot: snapshot as any,
+          };
+        });
+
+        await tx.summary_entries.createMany({
+          data: summaryEntriesData,
+        });
+
+        // Update all entry statuses to 'submitted'
+        await tx.competition_entries.updateMany({
+          where: {
+            id: { in: entries.map(e => e.id) },
+          },
+          data: { status: 'submitted' },
+        });
+      }, {
+        timeout: 10000,
+        maxWait: 5000,
+      });
+
+      // Log activity (outside transaction)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          action: 'summary.submitted_by_cd',
+          entityType: 'summary',
+          entityId: input.reservationId,
+          details: {
+            reservation_id: input.reservationId,
+            studio_id: reservation.studio_id,
+            studio_name: reservation.studios?.name,
+            competition_id: reservation.competition_id,
+            entries_count: routineCount,
+            entries_unused: Math.max(0, unusedSpaces),
+            notes: input.notes,
+          },
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+
+      return {
+        success: true,
+        message: `Summary submitted for ${reservation.studios?.name}. ${routineCount} entries moved to 'Awaiting Invoice' status.`,
+        entries_submitted: routineCount,
+        entries_unused: Math.max(0, unusedSpaces),
+      };
+    }),
 });

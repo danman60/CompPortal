@@ -87,6 +87,32 @@ export default function RoutineSummaries() {
     }
   };
 
+  // Submit on behalf of studio mutation
+  const submitOnBehalfMutation = trpc.summary.submitOnBehalf.useMutation({
+    onSuccess: async (result) => {
+      toast.success(result.message);
+      await refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleSubmitOnBehalf = async (summary: any) => {
+    if (!confirm(`Submit summary on behalf of ${summary.studio_name}?\n\nThis will:\n• Lock their ${summary.entry_count} entries\n• Move them to 'Awaiting Invoice' status\n• The studio will no longer be able to edit entries`)) {
+      return;
+    }
+
+    try {
+      await submitOnBehalfMutation.mutateAsync({
+        reservationId: summary.reservation_id,
+        notes: 'Submitted by Competition Director on behalf of studio',
+      });
+    } catch (error) {
+      // Error handled by mutation onError
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
       <div className="max-w-7xl mx-auto">
@@ -241,9 +267,22 @@ export default function RoutineSummaries() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         {summary.status === 'editing' ? (
-                          <span className="px-4 py-2 rounded-lg text-sm bg-gray-500/20 text-gray-400 border border-gray-500/30 cursor-not-allowed">
-                            ⏳ Waiting for submission
-                          </span>
+                          summary.entry_count > 0 ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubmitOnBehalf(summary);
+                              }}
+                              disabled={submitOnBehalfMutation.isPending}
+                              className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {submitOnBehalfMutation.isPending ? 'Submitting...' : 'Submit for Studio'}
+                            </button>
+                          ) : (
+                            <span className="px-4 py-2 rounded-lg text-sm bg-gray-500/20 text-gray-400 border border-gray-500/30 cursor-not-allowed">
+                              No entries yet
+                            </span>
+                          )
                         ) : summary.status === 'summarized' ? (
                           <>
                             <button
@@ -379,9 +418,19 @@ export default function RoutineSummaries() {
                 {/* Actions */}
                 <div className="space-y-2">
                   {summary.status === 'editing' ? (
-                    <span className="block w-full px-4 py-3 rounded-lg text-sm bg-gray-500/20 text-gray-400 border border-gray-500/30 text-center">
-                      ⏳ Waiting for submission
-                    </span>
+                    summary.entry_count > 0 ? (
+                      <button
+                        onClick={() => handleSubmitOnBehalf(summary)}
+                        disabled={submitOnBehalfMutation.isPending}
+                        className="w-full px-4 py-3 rounded-lg transition-all text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      >
+                        {submitOnBehalfMutation.isPending ? 'Submitting...' : 'Submit for Studio'}
+                      </button>
+                    ) : (
+                      <span className="block w-full px-4 py-3 rounded-lg text-sm bg-gray-500/20 text-gray-400 border border-gray-500/30 text-center">
+                        No entries yet
+                      </span>
+                    )
                   ) : summary.status === 'summarized' ? (
                     <>
                       <button

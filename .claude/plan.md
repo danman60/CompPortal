@@ -119,7 +119,7 @@ Useful when studios are unresponsive, have technical issues, or CD wants to clos
 1. ~~Pure Energy Migration~~ ✅
 2. ~~Delete Summer St. Catharines~~ ✅
 3. ~~Studios page table view + soft delete~~ ✅ (withdraw feature working)
-4. Routine Summaries enhancement (with Balance column)
+4. ~~Routine Summaries enhancement~~ ✅ (Balance column + financial stats)
 5. CD Submit on Behalf of SD
 6. Test account filtering
 
