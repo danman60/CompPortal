@@ -6,13 +6,13 @@ interface RoutinesFiltersProps {
   ageDivisions: any[];
   selectedCompetitionId: string;
   selectedStudioId: string;
-  selectedStatus: 'draft' | 'summarized' | 'all';
+  selectedStatus: 'draft' | 'submitted' | 'confirmed' | 'all';
   selectedCategoryTypeId: string;
   selectedDanceCategoryId: string;
   selectedAgeDivisionId: string;
   onCompetitionChange: (id: string) => void;
   onStudioChange: (id: string) => void;
-  onStatusChange: (status: 'draft' | 'summarized' | 'all') => void;
+  onStatusChange: (status: 'draft' | 'submitted' | 'confirmed' | 'all') => void;
   onCategoryTypeChange: (id: string) => void;
   onDanceCategoryChange: (id: string) => void;
   onAgeDivisionChange: (id: string) => void;
@@ -93,13 +93,14 @@ export function RoutinesFilters({
           </label>
           <select
             value={selectedStatus}
-            onChange={(e) => onStatusChange(e.target.value as 'draft' | 'summarized' | 'all')}
+            onChange={(e) => onStatusChange(e.target.value as 'draft' | 'submitted' | 'confirmed' | 'all')}
             disabled={isLoading}
             className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
           >
             <option value="all" className="bg-gray-900">All</option>
             <option value="draft" className="bg-gray-900">Draft</option>
-            <option value="summarized" className="bg-gray-900">Summarized</option>
+            <option value="submitted" className="bg-gray-900">Submitted</option>
+            <option value="confirmed" className="bg-gray-900">Confirmed</option>
           </select>
         </div>
 

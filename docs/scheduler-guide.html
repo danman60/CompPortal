@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CompSync Scheduler Guide</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+      border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 20px;
+      box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4);
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1.3rem;
+      color: #a78bfa;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      color: #c4b5fd;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    .toc {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 40px 0;
+    }
+
+    .toc h2 {
+      font-size: 1.5rem;
+      color: #fff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toc ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .toc a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #a78bfa;
+      text-decoration: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .toc a:hover {
+      background: rgba(139, 92, 246, 0.2);
+      transform: translateX(5px);
+    }
+
+    .toc .step-num {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    section {
+      margin: 60px 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .section-header .num {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 2rem;
+      color: #fff;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px 0;
+    }
+
+    .card p {
+      color: #b0b0b0;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .screenshot {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      margin: 20px 0;
+    }
+
+    .screenshot img {
+      width: 100%;
+      display: block;
+    }
+
+    .screenshot-caption {
+      background: rgba(139, 92, 246, 0.1);
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: #c4b5fd;
+      text-align: center;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .feature-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .feature-item h4 {
+      color: #a78bfa;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-item p {
+      color: #888;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .steps-list {
+      counter-reset: step;
+      list-style: none;
+    }
+
+    .steps-list li {
+      position: relative;
+      padding-left: 50px;
+      margin-bottom: 20px;
+    }
+
+    .steps-list li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .steps-list li strong {
+      color: #fff;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .tip-box {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .tip-box h4 {
+      color: #22c55e;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tip-box p {
+      color: #86efac;
+      margin: 0;
+    }
+
+    .warning-box {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .warning-box h4 {
+      color: #f59e0b;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .warning-box p {
+      color: #fcd34d;
+      margin: 0;
+    }
+
+    .block-types {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .block-type {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .block-type .icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .block-type h4 {
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .block-type p {
+      color: #888;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .block-type.adjudication {
+      border: 2px solid rgba(245, 158, 11, 0.5);
+    }
+
+    .block-type.break {
+      border: 2px solid rgba(139, 92, 246, 0.5);
+    }
+
+    .block-type.event {
+      border: 2px solid rgba(236, 72, 153, 0.5);
+    }
+
+    .keyboard-shortcuts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .shortcut {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+    }
+
+    .shortcut kbd {
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      color: #c4b5fd;
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 60px;
+    }
+
+    footer p {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: #a78bfa;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .block-types {
+        grid-template-columns: 1fr;
+      }
+
+      .toc ul {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">&#x2728;</div>
+    <h1>CompSync Scheduler</h1>
+    <p class="subtitle">Build Your Competition Schedule in Minutes</p>
+    <span class="badge">Version 2.0 - December 2025</span>
+  </header>
+
+  <div class="container">
+    <nav class="toc">
+      <h2>&#x1F4D6; Quick Navigation</h2>
+      <ul>
+        <li><a href="#overview"><span class="step-num">1</span> Overview</a></li>
+        <li><a href="#studio-codes"><span class="step-num">2</span> Studio Code Assignment</a></li>
+        <li><a href="#getting-started"><span class="step-num">3</span> Getting Started</a></li>
+        <li><a href="#routine-pool"><span class="step-num">4</span> Routine Pool</a></li>
+        <li><a href="#scheduling"><span class="step-num">5</span> Scheduling Routines</a></li>
+        <li><a href="#blocks"><span class="step-num">6</span> Adding Blocks</a></li>
+        <li><a href="#time-cascade"><span class="step-num">7</span> Time Cascade</a></li>
+        <li><a href="#saving"><span class="step-num">8</span> Saving & Undo</a></li>
+        <li><a href="#publishing"><span class="step-num">9</span> Publishing</a></li>
+      </ul>
+    </nav>
+
+    <section id="overview">
+      <div class="section-header">
+        <div class="num">1</div>
+        <h2>Overview</h2>
+      </div>
+      <div class="card">
+        <p>The CompSync Scheduler is a powerful drag-and-drop interface for building your competition schedule.
+           With automatic time cascading, conflict detection, and version history, you can build a professional
+           schedule in minutes instead of hours.</p>
+
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>&#x1F5D3; Drag & Drop</h4>
+            <p>Intuitive interface - just drag routines from the pool onto your schedule</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x23F1; Auto Time Cascade</h4>
+            <p>Times automatically calculate based on routine durations</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x26A0; Conflict Detection</h4>
+            <p>See warnings when dancers are double-booked</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x21A9; Version History</h4>
+            <p>Unlimited undo with full schedule snapshots</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4F1; Responsive</h4>
+            <p>Works on desktop, tablet, and mobile devices</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4E4; Export</h4>
+            <p>Export to PDF, CSV, or share live links</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="studio-codes">
+      <div class="section-header">
+        <div class="num">2</div>
+        <h2>Studio Code Assignment</h2>
+      </div>
+      <div class="card">
+        <p>Before scheduling begins, assign anonymous studio codes. These codes hide studio names from judges while allowing you to organize routines.</p>
+
+        <h4 style="color: #fff; margin: 20px 0 15px;">How to Assign Codes:</h4>
+        <ol class="steps-list">
+          <li>
+            <strong>Open the Assign Studio Codes modal</strong>
+            Click the "Assign Studio Codes" button in the scheduler toolbar.
+          </li>
+          <li>
+            <strong>Review the studio list</strong>
+            All studios with routines in this competition are displayed with their entry counts.
+          </li>
+          <li>
+            <strong>Auto-generate codes</strong>
+            Click "Auto-Assign All" to automatically assign sequential letter codes (A, B, C...).
+          </li>
+          <li>
+            <strong>Or manually assign</strong>
+            Type custom codes in each field. Each code must be unique.
+          </li>
+          <li>
+            <strong>Save assignments</strong>
+            Click "Save Codes" to apply the assignments.
+          </li>
+        </ol>
+
+        <div class="tip-box">
+          <h4>&#x1F4A1; Why Use Studio Codes?</h4>
+          <p>Anonymous codes ensure fair judging by preventing judges from knowing which studio is performing. Codes appear on schedules, backstage lists, and judge sheets instead of studio names.</p>
+        </div>
+
+        <div class="warning-box">
+          <h4>&#x26A0; Assign Codes First</h4>
+          <p>Assign studio codes before building your schedule. The codes will appear in the routine pool and scheduled items.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="getting-started">
+      <div class="section-header">
+        <div class="num">3</div>
+        <h2>Getting Started</h2>
+      </div>
+      <div class="card">
+        <p>Access the scheduler from your Competition Director dashboard by navigating to the Schedule page.</p>
+
+        <ol class="steps-list">
+          <li>
+            <strong>Select Competition</strong>
+            Use the dropdown at the top to select which competition you want to schedule.
+          </li>
+          <li>
+            <strong>Choose a Day</strong>
+            Click on the day tabs to switch between competition days. Each day shows its start time and routine count.
+          </li>
+          <li>
+            <strong>Set Start Time</strong>
+            Click the pencil icon next to the time to adjust when the day begins.
+          </li>
+        </ol>
+
+        <div class="tip-box">
+          <h4>&#x1F4A1; Pro Tip</h4>
+          <p>Set your day start time before adding routines - all times will automatically recalculate!</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="routine-pool">
+      <div class="section-header">
+        <div class="num">4</div>
+        <h2>The Routine Pool</h2>
+      </div>
+      <div class="card">
+        <p>The left panel shows all unscheduled routines. Use filters and search to find specific routines quickly.</p>
+
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>&#x1F50D; Search</h4>
+            <p>Type routine names, dancer names, or studio codes to filter</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F3AF; Filters</h4>
+            <p>Filter by Classification, Age Division, Genre, Entry Size, or Studio</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x2611; Select All</h4>
+            <p>Bulk select routines matching your current filters</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4CB; Views</h4>
+            <p>Toggle between Table view (compact) and Cards view (detailed)</p>
+          </div>
+        </div>
+
+        <h4 style="color: #fff; margin: 30px 0 15px;">Routine Information Displayed:</h4>
+        <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden;">
+          <thead>
+            <tr style="background: rgba(139, 92, 246, 0.2);">
+              <th style="padding: 12px; text-align: left; color: #c4b5fd;">Column</th>
+              <th style="padding: 12px; text-align: left; color: #c4b5fd;">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Routine</td>
+              <td style="padding: 12px; color: #888;">Title and dancer name(s)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Std</td>
+              <td style="padding: 12px; color: #888;">Studio code (anonymous identifier)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Class</td>
+              <td style="padding: 12px; color: #888;">Classification (Competitive, Part-Time, Novice)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Size</td>
+              <td style="padding: 12px; color: #888;">Entry size (Solo, Duet/Trio, Small Group, etc.)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">RA</td>
+              <td style="padding: 12px; color: #888;">Routine age (averaged from dancers)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Age</td>
+              <td style="padding: 12px; color: #888;">Age division category</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Genre</td>
+              <td style="padding: 12px; color: #888;">Dance style (Jazz, Lyrical, Contemporary, etc.)</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px; color: #fff;">Dur</td>
+              <td style="padding: 12px; color: #888;">Duration in minutes</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="warning-box" style="margin-top: 20px;">
+          <h4>&#x1F4DD; Notes Icon</h4>
+          <p>Routines with a memo icon have scheduling notes from the studio (e.g., "Please schedule on Day 2").
+             Hover over the icon to see the full note.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="scheduling">
+      <div class="section-header">
+        <div class="num">5</div>
+        <h2>Scheduling Routines</h2>
+      </div>
+      <div class="card">
+        <p>Schedule routines by dragging them from the pool to the schedule area, or use multi-select for bulk operations.</p>
+
+        <h4 style="color: #fff; margin-bottom: 15px;">Single Routine:</h4>
+        <ol class="steps-list">
+          <li>
+            <strong>Click on a routine row</strong>
+            This selects the routine and enables dragging.
+          </li>
+          <li>
+            <strong>Drag to the schedule</strong>
+            Drop it in the schedule area on the right. It will be added at the end.
+          </li>
+          <li>
+            <strong>Reorder as needed</strong>
+            Drag routines within the schedule to change their order.
+          </li>
+        </ol>
+
+        <h4 style="color: #fff; margin: 30px 0 15px;">Multi-Select:</h4>
+        <ol class="steps-list">
+          <li>
+            <strong>Check multiple routines</strong>
+            Use the checkboxes to select multiple routines at once.
+          </li>
+          <li>
+            <strong>Drag the group</strong>
+            Drag any selected routine to move all of them together.
+          </li>
+          <li>
+            <strong>Use "Select All"</strong>
+            Click "Select All" to select all routines matching your current filters.
+          </li>
+        </ol>
+
+        <div class="tip-box">
+          <h4>&#x1F4A1; Pro Tip</h4>
+          <p>Filter by genre first, then use "Select All" to quickly add all Jazz routines at once!</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="blocks">
+      <div class="section-header">
+        <div class="num">6</div>
+        <h2>Adding Blocks</h2>
+      </div>
+      <div class="card">
+        <p>Blocks are non-performance time slots that appear in your schedule. Use them for breaks, awards, and special events.</p>
+
+        <div class="block-types">
+          <div class="block-type adjudication">
+            <div class="icon">&#x1F3C6;</div>
+            <h4>Adjudication</h4>
+            <p>Awards ceremonies, judge critiques, announcements</p>
+          </div>
+          <div class="block-type break">
+            <div class="icon">&#x2615;</div>
+            <h4>Break</h4>
+            <p>Lunch breaks, intermissions, setup time</p>
+          </div>
+          <div class="block-type event">
+            <div class="icon">&#x1F389;</div>
+            <h4>Event</h4>
+            <p>Special performances, guest appearances, transitions</p>
+          </div>
+        </div>
+
+        <h4 style="color: #fff; margin: 20px 0 15px;">To Add a Block:</h4>
+        <ol class="steps-list">
+          <li>
+            <strong>Click the block button</strong>
+            Choose +Adjudication, +Break, or +Event from the toolbar.
+          </li>
+          <li>
+            <strong>Set the title</strong>
+            Enter a descriptive title (e.g., "Mini Awards", "Lunch Break").
+          </li>
+          <li>
+            <strong>Set duration</strong>
+            Specify how long the block will take in minutes.
+          </li>
+          <li>
+            <strong>Position it</strong>
+            Drag the block to the correct position in the schedule.
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="time-cascade">
+      <div class="section-header">
+        <div class="num">7</div>
+        <h2>Automatic Time Cascade</h2>
+      </div>
+      <div class="card">
+        <p>Times are calculated automatically based on the day start time and each item's duration. You never need to manually enter performance times!</p>
+
+        <div style="background: rgba(0,0,0,0.3); padding: 24px; border-radius: 12px; margin: 20px 0;">
+          <h4 style="color: #fff; margin-bottom: 12px;">Example Calculation:</h4>
+          <div style="font-family: monospace; color: #86efac; line-height: 2;">
+            Day Start: 08:00<br>
+            <span style="color: #888;">---</span><br>
+            #101 Solo Jazz (3 min) .... 08:00<br>
+            #102 Solo Lyrical (3 min) ... 08:03<br>
+            <span style="color: #f59e0b;">&#x2615; Break (15 min) ............. 08:06</span><br>
+            #103 Duet/Trio (4 min) ..... 08:21<br>
+            #104 Small Group (4 min) ... 08:25<br>
+            <span style="color: #888;">---</span><br>
+            <span style="color: #a78bfa;">Day ends at: 08:29</span>
+          </div>
+        </div>
+
+        <h4 style="color: #fff; margin: 20px 0 15px;">Default Durations by Entry Size:</h4>
+        <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden;">
+          <thead>
+            <tr style="background: rgba(139, 92, 246, 0.2);">
+              <th style="padding: 12px; text-align: left; color: #c4b5fd;">Entry Size</th>
+              <th style="padding: 12px; text-align: center; color: #c4b5fd;">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Solo</td>
+              <td style="padding: 12px; text-align: center; color: #888;">3 minutes</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Duet/Trio</td>
+              <td style="padding: 12px; text-align: center; color: #888;">4 minutes</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 12px; color: #fff;">Small Group / Large Group</td>
+              <td style="padding: 12px; text-align: center; color: #888;">4 minutes</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px; color: #fff;">Line / Production</td>
+              <td style="padding: 12px; text-align: center; color: #888;">5 minutes</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="tip-box" style="margin-top: 20px;">
+          <h4>&#x1F4A1; Extended Time</h4>
+          <p>Routines with extended time requested will use their custom duration instead of the default.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="saving">
+      <div class="section-header">
+        <div class="num">8</div>
+        <h2>Saving & Undo</h2>
+      </div>
+      <div class="card">
+        <p>Your changes are saved manually when you click Save. Each save creates a version snapshot you can restore later.</p>
+
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>&#x1F4BE; Save Button</h4>
+            <p>Click Save to persist all changes. Appears green when there are unsaved changes.</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x21A9; Undo Button</h4>
+            <p>Restore to the previous version. Each save creates a restore point.</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4CB; Version History</h4>
+            <p>Access from Actions menu to see all versions with timestamps.</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F5D1; Reset Day</h4>
+            <p>Clear all routines from the current day (available in Actions menu).</p>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <h4>&#x26A0; Don't Forget to Save!</h4>
+          <p>Changes are held in memory until you click Save. Refreshing the page without saving will lose your work.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="publishing">
+      <div class="section-header">
+        <div class="num">9</div>
+        <h2>Publishing Your Schedule</h2>
+      </div>
+      <div class="card">
+        <p>When your schedule is ready, publish it to make it visible to studios and generate shareable links.</p>
+
+        <ol class="steps-list">
+          <li>
+            <strong>Review your schedule</strong>
+            Make sure all routines are in the correct order and times look right.
+          </li>
+          <li>
+            <strong>Click the UNPUBLISHED button</strong>
+            This opens the publication options.
+          </li>
+          <li>
+            <strong>Choose visibility</strong>
+            Published schedules are visible to all registered studios.
+          </li>
+          <li>
+            <strong>Share the link</strong>
+            Use the Actions menu to export or share the schedule.
+          </li>
+        </ol>
+
+        <h4 style="color: #fff; margin: 30px 0 15px;">Export Options (Actions Menu):</h4>
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>&#x1F4C4; PDF Export</h4>
+            <p>Generate a printable PDF of the full schedule</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4CA; CSV Export</h4>
+            <p>Download as spreadsheet for external tools</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4E7; Email Studios</h4>
+            <p>Send schedule notifications to all studios</p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F517; Shareable Link</h4>
+            <p>Copy a public link to the live schedule</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <div class="num">&#x2753;</div>
+        <h2>Need Help?</h2>
+      </div>
+      <div class="card">
+        <p>If you run into issues or have questions, we're here to help!</p>
+
+        <div class="feature-grid">
+          <div class="feature-item">
+            <h4>&#x1F4E7; Email Support</h4>
+            <p><a href="mailto:techsupport@compsync.net" style="color: #a78bfa;">techsupport@compsync.net</a></p>
+          </div>
+          <div class="feature-item">
+            <h4>&#x1F4AC; Feedback Button</h4>
+            <p>Use the feedback button in the app to report issues directly</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 CompSync - Competition Management Made Seamless</p>
+    <p style="margin-top: 8px;"><a href="https://compsync.net">compsync.net</a></p>
+  </footer>
+</body>
+</html>

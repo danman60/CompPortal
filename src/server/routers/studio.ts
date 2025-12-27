@@ -948,6 +948,164 @@ export const studioRouter = router({
       };
     }),
 
+  // Withdraw a studio from a specific competition (soft delete)
+  // Keeps dancers, cancels reservation/entries, refunds capacity, voids unpaid invoices
+  withdrawFromCompetition: protectedProcedure
+    .input(z.object({
+      studioId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Only CDs and super admins can withdraw studios
+      if (!isAdmin(ctx.userRole)) {
+        throw new Error('Only competition directors and super admins can withdraw studios');
+      }
+
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.studioId },
+        select: {
+          id: true,
+          name: true,
+          tenant_id: true,
+        },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
+      // Find the reservation for this competition
+      const reservation = await prisma.reservations.findFirst({
+        where: {
+          studio_id: input.studioId,
+          competition_id: input.competitionId,
+          status: { not: 'cancelled' },
+        },
+        select: {
+          id: true,
+          spaces_confirmed: true,
+          spaces_requested: true,
+          status: true,
+        },
+      });
+
+      if (!reservation) {
+        throw new Error('No active reservation found for this studio and competition');
+      }
+
+      // Get the competition name for logging
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: { name: true },
+      });
+
+      let spacesRefunded = 0;
+      let entriesCancelled = 0;
+      let invoicesVoided = 0;
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Refund capacity if reservation was approved
+        const spacesToRefund = reservation.spaces_confirmed || 0;
+        if (spacesToRefund > 0 && (reservation.status === 'approved' || reservation.status === 'invoiced' || reservation.status === 'summarized')) {
+          await tx.competitions.update({
+            where: { id: input.competitionId },
+            data: {
+              available_reservation_tokens: {
+                increment: spacesToRefund,
+              },
+            },
+          });
+
+          // Log to capacity ledger
+          await tx.capacity_ledger.create({
+            data: {
+              tenant_id: studio.tenant_id,
+              competition_id: input.competitionId,
+              reservation_id: reservation.id,
+              change_amount: spacesToRefund,
+              reason: 'studio_withdraw',
+              created_by: ctx.userId,
+            },
+          });
+
+          spacesRefunded = spacesToRefund;
+        }
+
+        // 2. Cancel reservation (soft delete)
+        await tx.reservations.update({
+          where: { id: reservation.id },
+          data: {
+            status: 'cancelled',
+            updated_at: new Date(),
+          },
+        });
+
+        // 3. Cancel all entries for this reservation
+        const cancelledEntries = await tx.competition_entries.updateMany({
+          where: {
+            reservation_id: reservation.id,
+            status: { not: 'cancelled' },
+          },
+          data: {
+            status: 'cancelled',
+            updated_at: new Date(),
+          },
+        });
+        entriesCancelled = cancelledEntries.count;
+
+        // 4. Void any unpaid invoices for this reservation
+        const voidedInvoices = await tx.invoices.updateMany({
+          where: {
+            reservation_id: reservation.id,
+            status: { in: ['DRAFT', 'SENT'] },
+          },
+          data: {
+            status: 'VOIDED',
+            updated_at: new Date(),
+          },
+        });
+        invoicesVoided = voidedInvoices.count;
+
+        // 5. Delete any summaries for this reservation (summaries don't have status)
+        await tx.summaries.deleteMany({
+          where: {
+            reservation_id: reservation.id,
+          },
+        });
+      });
+
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: input.studioId,
+          action: 'studio.withdraw',
+          entityType: 'reservation',
+          entityId: reservation.id,
+          details: {
+            studio_name: studio.name,
+            competition_name: competition?.name,
+            competition_id: input.competitionId,
+            reason: input.reason || 'Studio withdrawal',
+            spaces_refunded: spacesRefunded,
+            entries_cancelled: entriesCancelled,
+            invoices_voided: invoicesVoided,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log activity (studio.withdraw)', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      return {
+        success: true,
+        message: `${studio.name} withdrawn from ${competition?.name || 'competition'}`,
+        spacesRefunded,
+        entriesCancelled,
+        invoicesVoided,
+      };
+    }),
+
   // Get studios with entries for a specific competition (for scheduler)
   getStudiosForCompetition: publicProcedure
     .input(

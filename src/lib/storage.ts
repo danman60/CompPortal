@@ -9,7 +9,7 @@ import { logger } from './logger';
  * This file remains client-side compatible
  */
 
-const MUSIC_BUCKET = 'competition-music';
+const MUSIC_BUCKET = 'CompPortalMp3s';
 const LOGOS_BUCKET = 'studio-logos';
 
 export interface UploadMusicParams {

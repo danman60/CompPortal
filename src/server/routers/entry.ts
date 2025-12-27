@@ -1957,7 +1957,7 @@ export const entryRouter = router({
     .input(z.object({
       competitionId: z.string().uuid().optional(),
       studioId: z.string().uuid().optional(),
-      status: z.enum(['draft', 'summarized', 'all']).optional(),
+      status: z.enum(['draft', 'submitted', 'confirmed', 'all']).optional(),
       categoryTypeId: z.string().uuid().optional(),
       danceCategoryId: z.string().uuid().optional(),
       ageDivisionId: z.string().uuid().optional(),
@@ -1991,15 +1991,13 @@ export const entryRouter = router({
         where.studio_id = input.studioId;
       }
 
-      // Status filter (draft vs summarized)
+      // Status filter (uses entry.status, not reservation.status)
       if (input.status === 'draft') {
-        where.reservations = {
-          status: { not: 'summarized' },
-        };
-      } else if (input.status === 'summarized') {
-        where.reservations = {
-          status: 'summarized',
-        };
+        where.status = 'draft';
+      } else if (input.status === 'submitted') {
+        where.status = 'submitted';
+      } else if (input.status === 'confirmed') {
+        where.status = 'confirmed';
       }
 
       // Competition settings filters

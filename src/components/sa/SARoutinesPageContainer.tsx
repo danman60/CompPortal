@@ -15,7 +15,7 @@ export function SARoutinesPageContainer() {
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<string>('');
   const [selectedStudioId, setSelectedStudioId] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<'draft' | 'summarized' | 'all'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'draft' | 'submitted' | 'confirmed' | 'all'>('all');
   const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState<string>('');
   const [selectedDanceCategoryId, setSelectedDanceCategoryId] = useState<string>('');
   const [selectedAgeDivisionId, setSelectedAgeDivisionId] = useState<string>('');
@@ -158,7 +158,8 @@ export function SARoutinesPageContainer() {
             >
               <option value="all" className="bg-gray-900">All Status</option>
               <option value="draft" className="bg-gray-900">Draft</option>
-              <option value="summarized" className="bg-gray-900">Summarized</option>
+              <option value="submitted" className="bg-gray-900">Submitted</option>
+              <option value="confirmed" className="bg-gray-900">Confirmed</option>
             </select>
           </div>
 
@@ -271,9 +272,22 @@ export function SARoutinesPageContainer() {
               <tbody>
                 {filteredEntries.map((entry: any) => {
                   const dancerCount = entry._count?.entry_participants || 0;
-                  const isDraft = entry.reservations?.status !== 'summarized';
-                  const statusColor = isDraft ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300';
-                  const statusLabel = isDraft ? 'Draft' : 'Summarized';
+
+                  // Use entry.status (not reservation.status) for accurate display
+                  const entryStatus = entry.status || 'draft';
+                  let statusColor = 'bg-yellow-500/20 text-yellow-300';
+                  let statusLabel = 'Draft';
+
+                  if (entryStatus === 'submitted') {
+                    statusColor = 'bg-blue-500/20 text-blue-300';
+                    statusLabel = 'Submitted';
+                  } else if (entryStatus === 'confirmed') {
+                    statusColor = 'bg-green-500/20 text-green-300';
+                    statusLabel = 'Confirmed';
+                  } else if (entryStatus === 'performed' || entryStatus === 'scored') {
+                    statusColor = 'bg-purple-500/20 text-purple-300';
+                    statusLabel = entryStatus === 'performed' ? 'Performed' : 'Scored';
+                  }
 
                   return (
                     <tr

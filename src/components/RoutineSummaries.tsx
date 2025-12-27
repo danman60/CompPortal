@@ -37,6 +37,7 @@ export default function RoutineSummaries() {
     if (selectedStudio !== 'all' && s.studio_id !== selectedStudio) return false;
     if (selectedStatus !== 'all') {
       // Map status filter to reservation status
+      if (selectedStatus === 'editing' && s.status !== 'editing') return false;
       if (selectedStatus === 'summarized' && s.status !== 'summarized') return false;
       if (selectedStatus === 'invoiced' && s.status !== 'invoiced') return false;
       if (selectedStatus === 'paid' && s.status !== 'closed') return false;
@@ -110,9 +111,9 @@ export default function RoutineSummaries() {
             onChange={(e) => setSelectedCompetition(e.target.value)}
             className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
           >
-            <option value="all" className="bg-gray-900">All Competitions</option>
+            <option value="all" className="bg-gray-900 text-white">All Competitions</option>
             {competitions.map((comp: any) => (
-              <option key={comp.id} value={comp.id} className="bg-gray-900">
+              <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
                 {comp.name} ({comp.year})
               </option>
             ))}
@@ -125,9 +126,9 @@ export default function RoutineSummaries() {
             onChange={(e) => setSelectedStudio(e.target.value)}
             className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
           >
-            <option value="all" className="bg-gray-900">All Studios</option>
+            <option value="all" className="bg-gray-900 text-white">All Studios</option>
             {studios.map((studio: any) => (
-              <option key={studio.id} value={studio.id} className="bg-gray-900">
+              <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
                 {studio.studio_name}
               </option>
             ))}
@@ -140,10 +141,11 @@ export default function RoutineSummaries() {
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
           >
-            <option value="all" className="bg-gray-900">All Statuses</option>
-            <option value="summarized" className="bg-gray-900">Awaiting Invoice</option>
-            <option value="invoiced" className="bg-gray-900">Invoiced</option>
-            <option value="paid" className="bg-gray-900">Paid</option>
+            <option value="all" className="bg-gray-900 text-white">All Statuses</option>
+            <option value="editing" className="bg-gray-900 text-white">⏳ Still Editing</option>
+            <option value="summarized" className="bg-gray-900 text-white">Awaiting Invoice</option>
+            <option value="invoiced" className="bg-gray-900 text-white">Invoiced</option>
+            <option value="paid" className="bg-gray-900 text-white">Paid</option>
           </select>
         </div>
       </div>
@@ -199,7 +201,11 @@ export default function RoutineSummaries() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {summary.status === 'summarized' ? (
+                      {summary.status === 'editing' ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-orange-500/20 text-orange-300 border-orange-500/30">
+                          ⏳ Editing ({summary.draft_count || summary.entry_count}/{summary.spaces_approved || summary.entries_unused})
+                        </span>
+                      ) : summary.status === 'summarized' ? (
                         <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-blue-500/20 text-blue-300 border-blue-500/30">
                           Awaiting Invoice
                         </span>
@@ -224,7 +230,11 @@ export default function RoutineSummaries() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
-                        {summary.status === 'summarized' ? (
+                        {summary.status === 'editing' ? (
+                          <span className="px-4 py-2 rounded-lg text-sm bg-gray-500/20 text-gray-400 border border-gray-500/30 cursor-not-allowed">
+                            ⏳ Waiting for submission
+                          </span>
+                        ) : summary.status === 'summarized' ? (
                           <>
                             <button
                               onClick={(e) => {
@@ -299,7 +309,11 @@ export default function RoutineSummaries() {
                       <p className="text-sm text-gray-400">({summary.studio_code})</p>
                     )}
                   </div>
-                  {summary.status === 'summarized' ? (
+                  {summary.status === 'editing' ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-orange-500/20 text-orange-300 border-orange-500/30">
+                      ⏳ Editing
+                    </span>
+                  ) : summary.status === 'summarized' ? (
                     <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-blue-500/20 text-blue-300 border-blue-500/30">
                       Awaiting Invoice
                     </span>
@@ -344,7 +358,11 @@ export default function RoutineSummaries() {
 
                 {/* Actions */}
                 <div className="space-y-2">
-                  {summary.status === 'summarized' ? (
+                  {summary.status === 'editing' ? (
+                    <span className="block w-full px-4 py-3 rounded-lg text-sm bg-gray-500/20 text-gray-400 border border-gray-500/30 text-center">
+                      ⏳ Waiting for submission
+                    </span>
+                  ) : summary.status === 'summarized' ? (
                     <>
                       <button
                         onClick={() => handleCreateInvoice(summary)}
@@ -387,9 +405,9 @@ export default function RoutineSummaries() {
       {/* Summary Stats */}
       {filteredSummaries.length > 0 && (
         <div className="mt-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <div className="text-sm text-gray-400 mb-1">Total Submissions</div>
+              <div className="text-sm text-gray-400 mb-1">Total Studios</div>
               <div className="text-3xl font-bold text-white">
                 {filteredSummaries.length}
               </div>
@@ -398,6 +416,12 @@ export default function RoutineSummaries() {
               <div className="text-sm text-gray-400 mb-1">Total Routines</div>
               <div className="text-3xl font-bold text-white">
                 {filteredSummaries.reduce((sum: number, s: any) => sum + s.entry_count, 0)}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-400 mb-1">⏳ Still Editing</div>
+              <div className="text-3xl font-bold text-orange-400">
+                {filteredSummaries.filter((s: any) => s.status === 'editing').length}
               </div>
             </div>
             <div>

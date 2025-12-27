@@ -14,7 +14,7 @@ export function RoutinesPageContainer() {
   // Filter state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<string>('');
   const [selectedStudioId, setSelectedStudioId] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<'draft' | 'summarized' | 'all'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'draft' | 'submitted' | 'confirmed' | 'all'>('all');
   const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState<string>('');
   const [selectedDanceCategoryId, setSelectedDanceCategoryId] = useState<string>('');
   const [selectedAgeDivisionId, setSelectedAgeDivisionId] = useState<string>('');

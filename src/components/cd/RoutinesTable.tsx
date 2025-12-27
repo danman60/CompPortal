@@ -61,9 +61,22 @@ export function RoutinesTable({ entries, isLoading }: RoutinesTableProps) {
           <tbody>
             {entries.map((entry) => {
               const dancerCount = entry.entry_participants?.length || 0;
-              const isDraft = entry.reservations?.status !== 'summarized';
-              const statusColor = isDraft ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300';
-              const statusLabel = isDraft ? 'Draft' : 'Summarized';
+
+              // Use entry.status (not reservation.status) for accurate display
+              const entryStatus = entry.status || 'draft';
+              let statusColor = 'bg-yellow-500/20 text-yellow-300';
+              let statusLabel = 'Draft';
+
+              if (entryStatus === 'submitted') {
+                statusColor = 'bg-blue-500/20 text-blue-300';
+                statusLabel = 'Submitted';
+              } else if (entryStatus === 'confirmed') {
+                statusColor = 'bg-green-500/20 text-green-300';
+                statusLabel = 'Confirmed';
+              } else if (entryStatus === 'performed' || entryStatus === 'scored') {
+                statusColor = 'bg-purple-500/20 text-purple-300';
+                statusLabel = entryStatus === 'performed' ? 'Performed' : 'Scored';
+              }
 
               return (
                 <tr

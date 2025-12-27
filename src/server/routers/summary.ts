@@ -25,7 +25,7 @@ export const summaryRouter = router({
     )
     .query(async ({ ctx, input }) => {
 
-      // Query summaries with related data
+      // Query summaries with related data (studios that HAVE submitted)
       const summaries = await prisma.summaries.findMany({
         where: {
           tenant_id: ctx.tenantId!, // Tenant isolation
@@ -47,6 +47,30 @@ export const summaryRouter = router({
       const filteredSummaries = input.competitionId
         ? summaries.filter(s => s.reservations?.competition_id === input.competitionId)
         : summaries;
+
+      // Get reservation IDs that already have summaries
+      const reservationIdsWithSummaries = new Set(filteredSummaries.map(s => s.reservation_id));
+
+      // Query approved reservations that DON'T have summaries (studios still editing)
+      const reservationsWithoutSummaries = await prisma.reservations.findMany({
+        where: {
+          tenant_id: ctx.tenantId!,
+          status: 'approved', // Only approved reservations (not cancelled, not already summarized)
+          ...(input.competitionId ? { competition_id: input.competitionId } : {}),
+        },
+        include: {
+          studios: true,
+          competitions: true,
+          _count: {
+            select: { competition_entries: true },
+          },
+        },
+      });
+
+      // Filter out reservations that already have summaries
+      const pendingReservations = reservationsWithoutSummaries.filter(
+        r => !reservationIdsWithSummaries.has(r.id)
+      );
 
       // For each summary, get the related entries to calculate totals
       const summariesWithDetails = await Promise.all(
@@ -80,12 +104,52 @@ export const summaryRouter = router({
             total_amount: totalAmount,
             status: summary.reservations?.status || 'unknown', // Include reservation status for UI filtering
             entries: entries,
+            has_submitted: true, // Flag to indicate this studio has submitted
+          };
+        })
+      );
+
+      // For pending reservations, get entry counts and estimated totals
+      const pendingWithDetails = await Promise.all(
+        pendingReservations.map(async (reservation) => {
+          const entries = await prisma.competition_entries.findMany({
+            where: {
+              reservation_id: reservation.id,
+            },
+            select: {
+              id: true,
+              total_fee: true,
+              status: true,
+            },
+          });
+
+          const draftCount = entries.filter(e => e.status === 'draft').length;
+          const totalAmount = entries.reduce((sum, entry) => sum + Number(entry.total_fee || 0), 0);
+
+          return {
+            id: null, // No summary ID
+            reservation_id: reservation.id,
+            studio_id: reservation.studio_id || '',
+            studio_name: reservation.studios?.name || '',
+            studio_code: reservation.studios?.code || null,
+            competition_id: reservation.competition_id || '',
+            competition_name: reservation.competitions?.name || '',
+            entries_used: 0,
+            entries_unused: reservation.spaces_confirmed || reservation.spaces_requested || 0,
+            submitted_at: null,
+            entry_count: entries.length,
+            draft_count: draftCount,
+            total_amount: totalAmount, // Estimated based on draft entries
+            status: 'editing', // Special status for studios still editing
+            entries: entries,
+            has_submitted: false, // Flag to indicate this studio hasn't submitted yet
+            spaces_approved: reservation.spaces_confirmed || reservation.spaces_requested || 0,
           };
         })
       );
 
       return {
-        summaries: summariesWithDetails,
+        summaries: [...summariesWithDetails, ...pendingWithDetails],
       };
     }),
 

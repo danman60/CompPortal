@@ -1,108 +1,79 @@
-# Current Work - Pipeline V2 Implementation
+# Current Work
 
-**Session:** December 7, 2025
-**Status:** ✅ COMPLETE - Pipeline V2 deployed
-**Build:** f902efe
-**Previous Session:** Session 78+
-
----
-
-## Pipeline V2 Implementation Complete
-
-### Commit: f902efe
-**13 new files, 1,720 lines of code**
-
-### Files Created:
-```
-src/app/dashboard/pipeline-v2/
-├── types.ts              - Type definitions (DisplayStatus, PipelineReservation, etc.)
-├── usePipelineV2.ts      - Hook with 10 mutations wired up
-├── page.tsx              - Page route
-├── PipelineV2.tsx        - Main component
-├── PipelineTable.tsx     - Table component
-├── PipelineRow.tsx       - Row component with quick actions
-├── PipelineExpandedRow.tsx - Expanded details (deposit, invoice, summary)
-├── KPICards.tsx          - 6 status KPI cards with click-to-filter
-├── StatusBadge.tsx       - 7 distinct status badges
-├── BeadProgress.tsx      - 4-step progress indicator with warnings
-├── Filters.tsx           - Search, competition dropdown, hide completed
-└── CollapsibleSection.tsx - Collapsible wrapper for sections
-```
-
-### Backend Changes:
-- `src/server/routers/reservation.ts` - Added `getPipelineViewV2` query
-  - `deriveDisplayStatus()` helper - Maps DB status to 7 display statuses
-  - `detectDataIntegrityIssue()` helper - Detects Elite Star bug and other issues
-
-### Mutations Wired:
-1. approve - Approve reservation
-2. reject - Reject reservation
-3. adjustSpaces - Reduce capacity
-4. updateDeposit - Record deposit
-5. reopenSummary - Reset to approved state
-6. createInvoice - Create from reservation
-7. sendInvoice - Email invoice
-8. markAsPaid - Mark fully paid
-9. voidInvoice - Void invoice
-10. applyPayment - Add partial payment
-
-### Access:
-- **URL:** https://empwr.compsync.net/dashboard/pipeline-v2
-- **Note:** New route - doesn't replace /dashboard/reservation-pipeline
+**Date:** December 27, 2025
+**Session:** Tracker Sync + Audit
+**Branch:** main (synced to tester)
 
 ---
 
-## Production Status
+## Just Completed
 
-### EMPWR Tenant: ✅ OPERATIONAL
-- **URL:** https://empwr.compsync.net
-- **Build:** f902efe (deployed)
-- **Pipeline V2:** Live and accessible
+### Invoice Audit (Dec 26)
+- Audited 75 invoices across EMPWR + Glow
+- All balance_remaining values correct
+- Minor field sync issues (cosmetic, no action needed)
+- Report: docs/audits/INVOICE_AUDIT_2025-12-26.md
 
-### Glow Tenant: ✅ OPERATIONAL
-- **URL:** https://glow.compsync.net
-- **Build:** f902efe (deployed)
-- **Pipeline V2:** Live and accessible
-
----
-
-## Test Credentials
-
-**Competition Director (EMPWR):**
-- Email: `empwrdance@gmail.com`
-- Password: `1CompSyncLogin!`
-
-**Super Admin:**
-- Email: `danieljohnabrahamson@gmail.com`
-- Password: `123456`
+### Tracker Sync (Dec 27)
+- Scanned both main and tester branches
+- Ruthlessly verified Phase 3-4 completion status
+- Updated PROJECT_STATUS.md with honest assessment
 
 ---
 
-## Next Steps
+## Phase 3-4 Reality Check
 
-### User Testing Needed:
-1. Navigate to Pipeline V2 page
-2. Test KPI card click-to-filter
-3. Test search and competition filters
-4. Expand rows and verify details
-5. Test quick action buttons
-6. Report any UI adjustments needed
+### Game Day: 85% code, 5% tested
+- All routers and pages exist
+- Only 10 test scores ever submitted (all draft)
+- Auth not wired (publicProcedure everywhere)
+- Rankings table unused
 
-### Potential Improvements:
-- Add "View Invoice" link in expanded row
-- Add activity log in expanded row
-- Mobile responsive adjustments
-- Replace old pipeline when V2 is approved
+### Media: 90% code, 2% tested
+- All routers and pages exist
+- 0 photos ever uploaded
+- 0 access logs
+- 1 test media package
 
----
-
-**Last Updated:** December 7, 2025
-**Status:** ✅ COMPLETE - Deployed and ready for testing
-**Next Action:** User to test Pipeline V2 at https://empwr.compsync.net/dashboard/pipeline-v2
+### MP3: 90% code, 0% tested
+- All routers and pages exist
+- 0 of 4,678 entries have music
 
 ---
 
-## Playwright Status
+## Next Actions
 
-⚠️ Playwright MCP has a persistent browser lock issue requiring session restart.
-Visual testing blocked until Claude Code session is restarted.
+### Testing Priority (on tester.compsync.net):
+1. [ ] Game Day: Submit real scores, finalize, verify placements
+2. [ ] Media: Upload real photos, test thumbnails, test parent portal
+3. [ ] MP3: Upload real audio files, verify playback
+
+### Code Fixes Needed:
+1. [ ] Replace publicProcedure with protectedProcedure in scoring.ts
+2. [ ] Build proper Results/Scoreboard page
+3. [ ] Remove hardcoded test competition ID from live page
+
+---
+
+## Branch Merge Status
+
+**Main <- Tester merge blocked until:**
+- Game Day tested end-to-end
+- Media tested with real files
+- Auth wired for scoring
+
+**Tester <- Main (safe to do):**
+- Tax rate fix (82b85db)
+
+---
+
+## Incident Status
+
+### Invoice Correction (Dec 23)
+- All 8 studios corrected
+- Awaiting CD approval to send emails
+- See: docs/incidents/INVOICE_CORRECTION_EXECUTION_PLAN.md
+
+---
+
+*Last Updated: Dec 27, 2025*

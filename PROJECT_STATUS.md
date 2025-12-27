@@ -1,170 +1,154 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-12-26
-**Current Focus:** Phase 2 Scheduling (Production-Ready) + Phase 4 Media (In Development)
+**Last Updated:** 2025-12-27
+**Current Focus:** Phase 3 Game Day Testing + Phase 4 Media Testing
 
 ---
 
 ## Project Phase Overview
 
-| Phase | Name | Status | Deployed |
-|-------|------|--------|----------|
-| **Phase 1** | Registration | ✅ LIVE | Nov 2025 |
-| **Phase 2** | Scheduling | ✅ Production-Ready | Testing on tester.compsync.net |
-| **Phase 3** | Game Day | ⏳ Not Started | - |
-| **Phase 4** | Media/Results | ✅ COMPLETE | tester.compsync.net |
+| Phase | Name | Code | Tested | Production |
+|-------|------|------|--------|------------|
+| **Phase 1** | Registration | ✅ 100% | ✅ 100% | ✅ LIVE |
+| **Phase 2** | Scheduling | ✅ 100% | ✅ 90% | ✅ LIVE |
+| **Phase 3** | Game Day | ✅ 85% | ⚠️ 5% | ❌ NOT READY |
+| **Phase 4** | Media/Results | ✅ 90% | ⚠️ 2% | ❌ NOT READY |
 
 ---
 
-## Phase 1: Registration (COMPLETE)
+## Phase 1: Registration (LIVE)
 
-**Status:** Live and processing real competitions
+**Status:** Production - Processing real competitions
 
-**Completed Features:**
-- ✅ Studio registration and claiming
-- ✅ Dancer management (CSV import + manual)
-- ✅ Reservation system with capacity management
-- ✅ Entry creation and management
-- ✅ Summary submission with automatic capacity refunds
-- ✅ Invoice generation with discounts/credits/tax
-- ✅ Payment tracking
-- ✅ Multi-tenant isolation (EMPWR + Glow)
-- ✅ Email notifications
-- ✅ White-label branding per tenant
+**Deployed to:** empwr.compsync.net, glow.compsync.net
 
-**Production Data:**
-- 2 Active Tenants: EMPWR + Glow
-- 58+ Studios registered
-- 4,300+ Entry spaces reserved
-- Thousands of dancers in system
+All features complete and battle-tested:
+- Studio registration, dancer management, CSV import
+- Reservation system with capacity management
+- Entry creation, summary submission
+- Invoice generation, payment tracking
+- Multi-tenant isolation, email notifications
 
 ---
 
-## Phase 2: Scheduling (PRODUCTION-READY)
+## Phase 2: Scheduling (LIVE)
 
-**Status:** Tested and verified, deployed to tester.compsync.net
+**Status:** Production-ready, deployed
 
-**Completed Features:**
-- ✅ Drag-and-drop routine scheduling
-- ✅ Multi-day schedule support (Thu-Sun)
-- ✅ Schedule blocks (breaks, awards, events)
-- ✅ Time cascade calculations
-- ✅ Day start time configuration
-- ✅ Conflict detection (same dancer in multiple routines)
-- ✅ Conflict auto-fix suggestions
-- ✅ Entry numbering (sequential, auto-renumber)
-- ✅ Trophy/Overalls badge system
-- ✅ Schedule version history with undo
-- ✅ PDF export
-- ✅ Send to Studios (email schedule)
-- ✅ Save/persist across days
+**Key Features:**
+- Drag-drop scheduling with conflict detection
+- Multi-day support, time cascade
+- PDF export, version history with undo
+- Extended time duration support
 
-**Recent Sessions (Nov-Dec 2025):**
-- Session 78: Comprehensive edge case testing (87.5% pass)
-- Sessions 71-77: Multi-day persistence, time cascade fixes
-- Sessions 55-56: PDF export, bug fixes
-
-**Known Limitations:**
-- Cross-day drag not implemented (workaround: unschedule → reschedule)
+**Known Limitation:** Cross-day drag not implemented (workaround: unschedule/reschedule)
 
 ---
 
-## Phase 3: Game Day (NOT STARTED)
+## Phase 3: Game Day (CODE COMPLETE, UNTESTED)
 
-**Status:** Specification complete, implementation not started
+**Status:** Code exists on tester branch, minimal testing done
 
-**Planned Features:**
-- Judge tablet interface with scoring slider
-- Backstage tech music playlist
-- Real-time routine status tracking
-- Score tabulation and rankings
-- Awards ceremony scheduling
-- Special awards nomination
+**Location:** CompPortal-tester branch only
 
-**Prerequisites:**
-- Finalized schedule from Phase 2
-- Judge account setup
-- Scoring rubric configuration
+### What's Built:
+| Component | Lines | Wired Up | Tested |
+|-----------|-------|----------|--------|
+| liveCompetition.ts | 3,561 | ✅ | ⚠️ 1 record |
+| scoring.ts | 662 | ✅ | ⚠️ 10 draft scores |
+| judges.ts | exists | ✅ | ⚠️ 9 judges |
+| /director-panel/live | 1,393 | ✅ | ❌ |
+| /tabulator | 1,931 | ✅ | ❌ |
+| /judge | 1,295 | ✅ | ❌ |
+| /backstage | 796 | ✅ | ❌ |
 
----
+### Critical Issues:
+1. **No Auth:** All scoring uses publicProcedure (TODO in code)
+2. **Rankings table unused:** Placements stored on entries instead
+3. **Hardcoded test IDs:** DEFAULT_TEST_COMPETITION_ID in live page
+4. **No finalized scores:** All 10 scores are status: draft
 
-## Phase 4: Media/Results (COMPLETE)
-
-**Status:** All features complete, deployed to tester.compsync.net
-
-**Completed (Dec 2025):**
-- ✅ Parent media portal (`/media` - name + DOB lookup)
-- ✅ Dancer media dashboard (`/media/[dancerId]`)
-- ✅ Studio Director media view (`/dashboard/media`)
-- ✅ Database schema (media_packages, media_photos, media_access_logs)
-- ✅ API routes for lookup, fetch, download
-- ✅ CD Media Upload Dashboard (`/dashboard/director-panel/media`)
-- ✅ Supabase Storage integration (signed URLs for uploads)
-- ✅ Photo bulk upload with drag-and-drop
-- ✅ Video URL management (performance + 3 judge commentary slots)
-- ✅ Media package status workflow (Pending → Processing → Ready → Published)
-- ✅ Tenant theming (dynamic colors from tenant config)
-- ✅ tRPC media router with full CRUD operations
-- ✅ Thumbnail generation (200x200 WebP, Sharp library, batch processing)
-- ✅ Access logging (parent_view, sd_view, download_* tracked with IP/user-agent)
+### What's Missing:
+- Results display page (scoreboard is placeholder - 24 lines)
+- Awards ceremony flow
+- Printable studio score sheets
+- Auth integration for judge tablets
 
 ---
 
-## Recent Incident Work (Dec 2025)
+## Phase 4: Media (CODE COMPLETE, UNTESTED)
 
-### Invoice Correction Incident (Dec 23, 2025)
-- **Issue:** $0 production fees on some invoices
-- **Resolution:** All 8 affected studios corrected (4 EMPWR + 4 Glow)
-- **Status:** New invoices created, awaiting CD approval to send emails
+**Status:** Code exists on tester branch, never tested with real data
 
-See `CURRENT_WORK.md` for detailed tracking.
+**Location:** CompPortal-tester branch only
+
+### What's Built:
+| Component | Lines | Wired Up | Tested |
+|-----------|-------|----------|--------|
+| media.ts router | 819 | ✅ | ❌ |
+| CD Upload Dashboard | 672 | ✅ | ⚠️ 1 package |
+| SD Media View | 328 | ✅ | ❌ |
+| Parent Portal | 216 | ✅ | ❌ |
+| Dancer Media Page | 399 | ✅ | ❌ |
+
+### Database Reality:
+- media_packages: 1 record
+- media_photos: **0 records**
+- media_access_logs: **0 records**
 
 ---
 
-## Build Status
+## MP3 Upload System (CODE COMPLETE, UNTESTED)
 
-- **Main Branch:** Production (empwr.compsync.net, glow.compsync.net)
-- **Tester Branch:** Phase 2 testing (tester.compsync.net)
-- **Build:** ✅ Passing (89/89 pages)
-- **Type Check:** ✅ Passing
+**Status:** Code exists, zero usage
+
+### Database Reality:
+- Entries with music: **0**
+- Entries without music: **4,678**
+
+### What's Built:
+- music.ts router (827 lines)
+- music-upload page (902 lines)
+- musicNotification router
 
 ---
 
-## Documentation
+## Branch Status
 
-### Active Trackers
-- `PROJECT_STATUS.md` - This file
-- `CURRENT_WORK.md` - Current session work
-- `CLAUDE.md` - Development instructions
+| Branch | Location | Purpose | Status |
+|--------|----------|---------|--------|
+| main | CompPortal | Production | Phase 1-2 LIVE |
+| tester | CompPortal-tester | Development | Phase 3-4 code complete |
 
-### Specifications
-- `docs/specs/MASTER_BUSINESS_LOGIC.md` - 4-phase overview
-- `docs/specs/PHASE1_SPEC.md` - Phase 1 implementation
-- `docs/specs/GAME_DAY_SPEC.md` - Phase 3 specification
+### Main-only features:
+- Pipeline V2 (full)
+- Tax rate fix
 
-### Navigation Docs
-- `CODEBASE_MAP.md` - File/component index
-- `docs/DATABASE_EFFECTS.md` - Triggers, functions, RLS
-- `docs/COMPONENT_TREES.md` - Component hierarchies
-- `docs/TRPC_SHAPES.md` - tRPC response types
+### Tester-only features:
+- Game Day (all components)
+- Media Suite (all components)
+- MP3 Upload System
+
+---
+
+## Immediate Priorities
+
+1. **Test Game Day** end-to-end on tester.compsync.net
+2. **Test Media upload** with real photos
+3. **Test MP3 upload** with real audio files
+4. **Wire auth** for scoring (remove publicProcedure)
+5. **Build Results page** (rankings display)
 
 ---
 
 ## Test Credentials
 
-**Super Admin:** danieljohnabrahamson@gmail.com / 123456
-**EMPWR CD:** empwrdance@gmail.com / 1CompSyncLogin!
-**Glow CD:** registration@glowdancecomp.com / 1CompSyncLogin!
-**Studio Director (Test):** djamusic@gmail.com / 123456
+| Role | Site | Email | Password |
+|------|------|-------|----------|
+| SA | admin.compsync.net | danieljohnabrahamson@gmail.com | 123456 |
+| CD (EMPWR) | empwr.compsync.net | empwrdance@gmail.com | 1CompSyncLogin! |
+| CD (Glow) | glow.compsync.net | registration@glowdancecomp.com | 1CompSyncLogin! |
 
 ---
 
-## Next Priorities
-
-1. **Media Suite Completion** - Enable CD to upload photos/videos
-2. **Landing Page Update** - Reflect 4-phase system accurately
-3. **Phase 3 (Game Day)** - Judge scoring interface
-
----
-
-*Production Status: STABLE - Ready for competitions*
+*Updated after ruthless code verification - Dec 27, 2025*
