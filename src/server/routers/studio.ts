@@ -1062,10 +1062,10 @@ export const studioRouter = router({
         const cancelledEntries = await tx.competition_entries.updateMany({
           where: {
             reservation_id: reservation.id,
-            status: { not: 'cancelled' },
+            status: { not: 'withdrawn' },
           },
           data: {
-            status: 'cancelled',
+            status: 'withdrawn',
             updated_at: new Date(),
           },
         });
