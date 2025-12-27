@@ -38,6 +38,7 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'unclaimed' | 'claimed' | 'invited'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'eventDate'>('name'); // Default to alphabetical
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards'); // View toggle
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [expandedStudioId, setExpandedStudioId] = useState<string | null>(null);
@@ -51,6 +52,14 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     reservationCount: number;
     entryCount: number;
     confirmText: string;
+  } | null>(null);
+  const [withdrawModal, setWithdrawModal] = useState<{
+    isOpen: boolean;
+    studioId: string;
+    studioName: string;
+    competitionId: string;
+    competitionName: string;
+    reason: string;
   } | null>(null);
   const [editData, setEditData] = useState({
     name: '',
@@ -137,6 +146,18 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     onError: (error) => {
       toast.error(getFriendlyErrorMessage(error.message));
       setSendingInvites(false);
+    },
+  });
+
+  // Withdraw from Competition mutation (CD feature - soft delete)
+  const withdrawMutation = trpc.studio.withdrawFromCompetition.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setWithdrawModal(null);
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
     },
   });
 
@@ -272,6 +293,27 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     setSendingInvites(true);
     await sendInvitationsMutation.mutateAsync({
       studioIds: [studioIdToResend],
+    });
+  };
+
+  // CD Feature: Withdraw from Competition handler
+  const handleWithdraw = (studio: any, competitionId: string, competitionName: string) => {
+    setWithdrawModal({
+      isOpen: true,
+      studioId: studio.id,
+      studioName: studio.name,
+      competitionId,
+      competitionName,
+      reason: '',
+    });
+  };
+
+  const confirmWithdraw = () => {
+    if (!withdrawModal) return;
+    withdrawMutation.mutate({
+      studioId: withdrawModal.studioId,
+      competitionId: withdrawModal.competitionId,
+      reason: withdrawModal.reason || undefined,
     });
   };
 
@@ -855,8 +897,31 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
             </button>
           </div>
 
-          {/* Sort & Bulk Actions */}
+          {/* View Toggle & Sort & Bulk Actions */}
           <div className="flex flex-wrap gap-2 items-center pt-4 border-t border-white/10">
+            {/* View Toggle */}
+            <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 mr-4">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1 rounded text-sm transition-all ${
+                  viewMode === 'cards'
+                    ? 'bg-purple-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                🃏 Cards
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1 rounded text-sm transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-purple-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                📋 Table
+              </button>
+            </div>
             <span className="text-sm text-gray-400 mr-2">Sort:</span>
             <button
               onClick={() => setSortBy('name')}
@@ -984,7 +1049,7 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
         </div>
       )}
 
-      {/* Studios Grid */}
+      {/* Studios Display */}
       {sortedStudios.length === 0 ? (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
           <div className="text-6xl mb-4">🏢</div>
@@ -1003,7 +1068,126 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
             </button>
           )}
         </div>
+      ) : viewMode === 'table' ? (
+        /* Table View */
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  {isCompetitionDirector && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-8"></th>}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Studio</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Code</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Contact</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {sortedStudios.map((studio) => {
+                  const isSelected = selectedStudios.has(studio.id);
+                  return (
+                    <tr key={studio.id} className={`hover:bg-white/5 transition-colors ${isSelected ? 'bg-purple-500/10' : ''}`}>
+                      {/* Checkbox for unclaimed studios (CD only) */}
+                      {isCompetitionDirector && (
+                        <td className="px-4 py-3">
+                          {!studio.isClaimed && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleStudio(studio.id)}
+                              className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                            />
+                          )}
+                        </td>
+                      )}
+                      {/* Studio Name */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{studio.name}</span>
+                          {isCompetitionDirector && (
+                            <>
+                              {studio.isClaimed ? (
+                                <span className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded text-xs border border-green-400/30">✓</span>
+                              ) : (
+                                <span className="bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded text-xs border border-orange-400/30">⚠</span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        {studio.city && <div className="text-xs text-gray-400">{studio.city}, {studio.province}</div>}
+                      </td>
+                      {/* Code */}
+                      <td className="px-4 py-3">
+                        {studio.code && (
+                          <button
+                            onClick={() => copyToClipboard(studio.code!, 'Studio code')}
+                            className="text-purple-400 hover:text-purple-300 text-sm font-mono"
+                          >
+                            {studio.code}
+                          </button>
+                        )}
+                      </td>
+                      {/* Contact */}
+                      <td className="px-4 py-3">
+                        {studio.email && (
+                          <a href={`mailto:${studio.email}`} className="text-blue-400 hover:underline text-sm block truncate max-w-[200px]">
+                            {studio.email}
+                          </a>
+                        )}
+                        {studio.phone && <div className="text-xs text-gray-400">{studio.phone}</div>}
+                      </td>
+                      {/* Status */}
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          studio.status === 'approved'
+                            ? 'bg-green-500/20 text-green-300 border border-green-400/30'
+                            : 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/30'
+                        }`}>
+                          {studio.status?.toUpperCase()}
+                        </span>
+                      </td>
+                      {/* Actions */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {isCompetitionDirector && !studio.isClaimed && (
+                            <button
+                              onClick={() => handleResendInvitation(studio.id, studio.name)}
+                              disabled={sendingInvites}
+                              className="px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded text-xs border border-blue-400/30 disabled:opacity-50"
+                            >
+                              📧
+                            </button>
+                          )}
+                          {isCompetitionDirector && competitions.length > 0 && (
+                            <button
+                              onClick={() => handleWithdraw(studio, competitions[0].id, competitions[0].name)}
+                              className="px-2 py-1 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 rounded text-xs border border-orange-400/30"
+                              title="Withdraw from competition"
+                            >
+                              🚫
+                            </button>
+                          )}
+                          {isCompetitionDirector && (
+                            <button
+                              onClick={() => handleDeleteStudio(studio)}
+                              className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded text-xs border border-red-400/30"
+                              title="Delete studio"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* Card View (existing) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedStudios.map((studio) => {
             const isExpanded = expandedStudioId === studio.id;
@@ -1476,6 +1660,68 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                 className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-red-500/50 disabled:to-red-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleteStudioMutation.isPending ? 'Deleting...' : 'Permanently Delete Studio'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw from Competition Modal (CD Feature - Soft Delete) */}
+      {withdrawModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold text-white mb-2">🚫 Withdraw from Competition</h3>
+            <p className="text-gray-400 mb-6">
+              Withdraw <span className="text-white font-semibold">{withdrawModal.studioName}</span> from <span className="text-purple-400 font-semibold">{withdrawModal.competitionName}</span>
+            </p>
+
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-2">
+                <span className="text-orange-400 text-xl">⚠️</span>
+                <div className="text-orange-300 text-sm">
+                  <p className="font-semibold mb-1">This soft delete will:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Cancel the reservation (spaces refunded)</li>
+                    <li>Cancel all entries (kept for records)</li>
+                    <li>Void unpaid invoices</li>
+                    <li>Keep dancers (can re-register later)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Reason Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Reason for withdrawal <span className="text-gray-500">(optional)</span>
+              </label>
+              <textarea
+                value={withdrawModal.reason}
+                onChange={(e) =>
+                  setWithdrawModal({
+                    ...withdrawModal,
+                    reason: e.target.value,
+                  })
+                }
+                placeholder="e.g., Studio requested withdrawal, scheduling conflict..."
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setWithdrawModal(null)}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmWithdraw}
+                disabled={withdrawMutation.isPending}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-orange-500/50 disabled:to-orange-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+              >
+                {withdrawMutation.isPending ? 'Withdrawing...' : 'Confirm Withdrawal'}
               </button>
             </div>
           </div>
