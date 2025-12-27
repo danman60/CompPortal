@@ -26,9 +26,15 @@ export const summaryRouter = router({
     .query(async ({ ctx, input }) => {
 
       // Query summaries with related data (studios that HAVE submitted)
+      // Filter out test studios from CD view
       const summaries = await prisma.summaries.findMany({
         where: {
           tenant_id: ctx.tenantId!, // Tenant isolation
+          reservations: {
+            studios: {
+              OR: [{ is_test: false }, { is_test: null }],
+            },
+          },
         },
         include: {
           reservations: {
@@ -52,11 +58,15 @@ export const summaryRouter = router({
       const reservationIdsWithSummaries = new Set(filteredSummaries.map(s => s.reservation_id));
 
       // Query approved reservations that DON'T have summaries (studios still editing)
+      // Filter out test studios from CD view
       const reservationsWithoutSummaries = await prisma.reservations.findMany({
         where: {
           tenant_id: ctx.tenantId!,
           status: 'approved', // Only approved reservations (not cancelled, not already summarized)
           ...(input.competitionId ? { competition_id: input.competitionId } : {}),
+          studios: {
+            OR: [{ is_test: false }, { is_test: null }],
+          },
         },
         include: {
           studios: true,
