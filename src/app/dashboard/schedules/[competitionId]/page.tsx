@@ -192,9 +192,10 @@ export default function StudioScheduleView() {
 
   // PDF Export function
   const handleExportPDF = () => {
+    // Count routines (not blocks) for display
     const routineItems = filteredItems.filter(item => item.itemType === 'routine');
-    if (routineItems.length === 0) {
-      toast.error('No routines to export');
+    if (filteredItems.length === 0) {
+      toast.error('No schedule items to export');
       return;
     }
 
@@ -245,18 +246,35 @@ export default function StudioScheduleView() {
       // Reset text color for body
       doc.setTextColor(0, 0, 0);
 
-      // Prepare table data
-      const tableData = routineItems.map(item => {
-        const routine = item.data as ScheduledRoutine;
-        return [
-          `#${routine.entryNumber}`,
-          routine.scheduledDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          routine.performanceTime,
-          routine.title,
-          `${routine.entrySize} • ${routine.classification}`,
-          routine.category,
-          routine.hasNote ? '✓ Note' : '',
-        ];
+      // Prepare table data - include both routines AND blocks
+      const tableData: (string | { content: string; colSpan?: number; styles?: Record<string, unknown> })[][] = [];
+
+      filteredItems.forEach(item => {
+        if (item.itemType === 'routine') {
+          const routine = item.data as ScheduledRoutine;
+          tableData.push([
+            `#${routine.entryNumber}`,
+            routine.scheduledDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            routine.performanceTime,
+            routine.title,
+            `${routine.entrySize} • ${routine.classification}`,
+            routine.category,
+            routine.hasNote ? '✓ Note' : '',
+          ]);
+        } else {
+          // Block row - styled similar to CD schedule
+          const block = item.data as ScheduleBlock;
+          const icon = block.type === 'award' ? '🏆' : block.type === 'event' ? '🎉' : '☕';
+          const blockText = `${block.startTime} | ${icon} ${block.title || block.type} (${block.duration}m)`;
+          tableData.push([
+            { content: blockText, colSpan: 7, styles: {
+              fillColor: block.type === 'award' ? [255, 251, 235] : block.type === 'event' ? [253, 244, 255] : [236, 254, 255],
+              fontStyle: 'bold',
+              textColor: block.type === 'award' ? [146, 64, 14] : block.type === 'event' ? [134, 25, 143] : [14, 116, 144],
+              halign: 'left',
+            }}
+          ]);
+        }
       });
 
       // Add table with polished styling matching CD schedule
