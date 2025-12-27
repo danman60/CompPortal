@@ -72,7 +72,7 @@ export const summaryRouter = router({
         r => !reservationIdsWithSummaries.has(r.id)
       );
 
-      // For each summary, get the related entries to calculate totals
+      // For each summary, get the related entries and invoice to calculate totals
       const summariesWithDetails = await Promise.all(
         filteredSummaries.map(async (summary) => {
           const entries = await prisma.competition_entries.findMany({
@@ -83,6 +83,21 @@ export const summaryRouter = router({
             select: {
               id: true,
               total_fee: true,
+              status: true,
+            },
+          });
+
+          // Look up invoice for this reservation
+          const invoice = await prisma.invoices.findFirst({
+            where: {
+              reservation_id: summary.reservation_id,
+              status: { not: 'voided' }, // Exclude voided invoices
+            },
+            select: {
+              id: true,
+              subtotal: true,
+              total: true,
+              balance_remaining: true,
               status: true,
             },
           });
@@ -105,6 +120,11 @@ export const summaryRouter = router({
             status: summary.reservations?.status || 'unknown', // Include reservation status for UI filtering
             entries: entries,
             has_submitted: true, // Flag to indicate this studio has submitted
+            // Invoice data for financial tracking
+            invoice_subtotal: invoice ? Number(invoice.subtotal) : null,
+            invoice_total: invoice ? Number(invoice.total) : null,
+            invoice_balance_remaining: invoice ? Number(invoice.balance_remaining) : null,
+            has_invoice: !!invoice,
           };
         })
       );
@@ -119,6 +139,21 @@ export const summaryRouter = router({
             select: {
               id: true,
               total_fee: true,
+              status: true,
+            },
+          });
+
+          // Look up any existing invoice (from reopened summaries)
+          const invoice = await prisma.invoices.findFirst({
+            where: {
+              reservation_id: reservation.id,
+              status: { not: 'voided' },
+            },
+            select: {
+              id: true,
+              subtotal: true,
+              total: true,
+              balance_remaining: true,
               status: true,
             },
           });
@@ -144,6 +179,11 @@ export const summaryRouter = router({
             entries: entries,
             has_submitted: false, // Flag to indicate this studio hasn't submitted yet
             spaces_approved: reservation.spaces_confirmed || reservation.spaces_requested || 0,
+            // Invoice data for financial tracking
+            invoice_subtotal: invoice ? Number(invoice.subtotal) : null,
+            invoice_total: invoice ? Number(invoice.total) : null,
+            invoice_balance_remaining: invoice ? Number(invoice.balance_remaining) : null,
+            has_invoice: !!invoice,
           };
         })
       );

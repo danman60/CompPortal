@@ -2042,8 +2042,8 @@ const schedulingProgressRouter = router({
         c.tenant_id,
         t.name as tenant_name,
         COUNT(ce.id) as total_routines,
-        COUNT(ce.id) FILTER (WHERE ce.session_id IS NOT NULL) as scheduled_routines,
-        MAX(ce.updated_at) FILTER (WHERE ce.session_id IS NOT NULL) as last_scheduled
+        COUNT(ce.id) FILTER (WHERE ce.is_scheduled = true) as scheduled_routines,
+        MAX(ce.updated_at) FILTER (WHERE ce.is_scheduled = true) as last_scheduled
       FROM competitions c
       INNER JOIN tenants t ON c.tenant_id = t.id
       LEFT JOIN competition_entries ce ON ce.competition_id = c.id AND ce.status != 'cancelled'

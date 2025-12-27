@@ -75,13 +75,53 @@ C) Filter by specific studio IDs
 
 ---
 
+## Feature 4: CD Submit Summary on Behalf of SD
+
+### Goal
+Allow CD to submit a routine summary on behalf of a studio that hasn't submitted yet.
+Useful when studios are unresponsive, have technical issues, or CD wants to close registration.
+
+### Use Cases
+1. Studio is unresponsive but entries are ready
+2. Studio has technical issues accessing the platform
+3. CD wants to close registration and force-submit remaining studios
+
+### Behavior
+**Must act EXACTLY like SD pressed "Submit Summary" button:**
+1. Create summary record in `summaries` table
+2. Update entries from `'draft'` → `'submitted'`
+3. Update reservation: `spaces_confirmed = routineCount`, `status = 'summarized'`, `is_closed = true`
+4. Calculate `entries_used` / `entries_unused`, refund unused capacity
+5. Create `summary_entries` snapshots for audit trail
+6. Log activity as `summary.submitted_by_cd`
+
+### Backend Changes
+**File:** `src/server/routers/summary.ts`
+- Add `submitOnBehalf` mutation (adminProcedure)
+- Input: `{ reservationId: string, notes?: string }`
+- Replicate logic from `entry.ts` lines 250-549 (SD submission)
+
+### Frontend Changes
+**Files:**
+- `src/components/RoutineSummaries.tsx` - Add "Submit for Studio" button for studios in 'editing' status
+- Pipeline V2 component - Similar button in "Not Submitted" section
+
+### UI
+- Button labeled "Submit for Studio" with ⬆️ icon
+- Confirmation modal: "Submit summary on behalf of [Studio Name]?"
+- Warning: "This will lock their entries and move them to 'Awaiting Invoice' status"
+- Optional notes field for reason
+
+---
+
 ## Execution Order
 
-1. ~~Pure Energy Migration~~ (executing now)
-2. ~~Delete Summer St. Catharines~~ (executing now)
-3. Routine Summaries enhancement
-4. Studios page table view + soft delete
-5. Test account filtering
+1. ~~Pure Energy Migration~~ ✅
+2. ~~Delete Summer St. Catharines~~ ✅
+3. ~~Studios page table view + soft delete~~ ✅ (withdraw feature working)
+4. Routine Summaries enhancement (with Balance column)
+5. CD Submit on Behalf of SD
+6. Test account filtering
 
 ---
 
