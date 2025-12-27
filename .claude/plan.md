@@ -121,7 +121,7 @@ Useful when studios are unresponsive, have technical issues, or CD wants to clos
 3. ~~Studios page table view + soft delete~~ ✅ (withdraw feature working)
 4. ~~Routine Summaries enhancement~~ ✅ (Balance column + financial stats)
 5. ~~CD Submit on Behalf of SD~~ ✅ (submitOnBehalf mutation + UI button)
-6. Test account filtering
+6. ~~Test account filtering~~ ✅ (is_test filter + DJAGlowTester marked)
 
 ---
 
