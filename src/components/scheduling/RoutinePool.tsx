@@ -281,6 +281,9 @@ export function RoutinePool({
   const [sortBy, setSortBy] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Classification grouping: collapsed state (all expanded by default)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
   // Helper: Check if routine has conflict
   const hasConflict = (routineId: string) => {
     return conflicts.some((c) => c.routine1Id === routineId || c.routine2Id === routineId);
@@ -340,6 +343,42 @@ export function RoutinePool({
 
     return sorted;
   }, [routines, sortBy, sortDirection]);
+
+  // Check if grouping by classification should be enabled
+  // Group when: (age OR size filter selected) AND classification NOT selected
+  const shouldGroupByClassification = (
+    (filters.ageGroups.length > 0 || filters.groupSizes.length > 0) &&
+    filters.classifications.length === 0
+  );
+
+  // Group routines by classification name
+  const groupedRoutines = React.useMemo(() => {
+    if (!shouldGroupByClassification) return null;
+
+    const groups = new Map<string, Routine[]>();
+    for (const routine of sortedRoutines) {
+      const key = routine.classificationName || 'Unknown';
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(routine);
+    }
+    // Sort groups by classification name
+    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [sortedRoutines, shouldGroupByClassification]);
+
+  // Toggle group expand/collapse
+  const toggleGroup = (classificationName: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(classificationName)) {
+        next.delete(classificationName);
+      } else {
+        next.add(classificationName);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
@@ -657,23 +696,72 @@ export function RoutinePool({
                 </tr>
               </thead>
               <tbody>
-                {sortedRoutines.map((routine) => (
-                  <DraggableRoutineRow
-                    key={routine.id}
-                    routine={routine}
-                    viewMode={viewMode}
-                    hasConflict={hasConflict(routine.id)}
-                    conflictSeverity={getConflictSeverity(routine.id)}
-                    hasNotes={routineNotes[routine.id] || false}
-                    noteText={routineNotesText[routine.id]}
-                    hasAgeChange={ageChanges.includes(routine.id)}
-                    isLastRoutine={isLastRoutine(routine.id)}
-                    isSelected={selectedRoutineIds.has(routine.id)}
-                    isCompeting={competingRoutineIds.has(routine.id)}
-                    onToggleSelection={onToggleSelection}
-                    onEditClick={onEditClick}
-                  />
-                ))}
+                {/* Grouped view - when age OR size filter selected, group by classification */}
+                {groupedRoutines ? (
+                  groupedRoutines.map(([classificationName, classRoutines]) => {
+                    const isCollapsed = collapsedGroups.has(classificationName);
+                    return (
+                      <React.Fragment key={classificationName}>
+                        {/* Group Header Row */}
+                        <tr
+                          className="bg-white/20 border-b border-white/30 cursor-pointer hover:bg-white/25 transition-colors"
+                          onClick={() => toggleGroup(classificationName)}
+                        >
+                          <td colSpan={9} className="px-2 py-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white/80 text-sm">
+                                {isCollapsed ? '▶' : '▼'}
+                              </span>
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${getClassificationColor(classificationName)}`}>
+                                {classificationName}
+                              </span>
+                              <span className="text-white/70 text-xs font-medium">
+                                ({classRoutines.length})
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {/* Routine Rows (hidden if collapsed) */}
+                        {!isCollapsed && classRoutines.map((routine) => (
+                          <DraggableRoutineRow
+                            key={routine.id}
+                            routine={routine}
+                            viewMode={viewMode}
+                            hasConflict={hasConflict(routine.id)}
+                            conflictSeverity={getConflictSeverity(routine.id)}
+                            hasNotes={routineNotes[routine.id] || false}
+                            noteText={routineNotesText[routine.id]}
+                            hasAgeChange={ageChanges.includes(routine.id)}
+                            isLastRoutine={isLastRoutine(routine.id)}
+                            isSelected={selectedRoutineIds.has(routine.id)}
+                            isCompeting={competingRoutineIds.has(routine.id)}
+                            onToggleSelection={onToggleSelection}
+                            onEditClick={onEditClick}
+                          />
+                        ))}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  /* Flat view - no grouping */
+                  sortedRoutines.map((routine) => (
+                    <DraggableRoutineRow
+                      key={routine.id}
+                      routine={routine}
+                      viewMode={viewMode}
+                      hasConflict={hasConflict(routine.id)}
+                      conflictSeverity={getConflictSeverity(routine.id)}
+                      hasNotes={routineNotes[routine.id] || false}
+                      noteText={routineNotesText[routine.id]}
+                      hasAgeChange={ageChanges.includes(routine.id)}
+                      isLastRoutine={isLastRoutine(routine.id)}
+                      isSelected={selectedRoutineIds.has(routine.id)}
+                      isCompeting={competingRoutineIds.has(routine.id)}
+                      onToggleSelection={onToggleSelection}
+                      onEditClick={onEditClick}
+                    />
+                  ))
+                )}
               </tbody>
             </table>
           </div>

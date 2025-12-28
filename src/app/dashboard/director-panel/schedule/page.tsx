@@ -273,7 +273,7 @@ function SortableScheduleRow({
         <td className="px-1 py-2" style={{ width: '36px' }}></td>
         <td className="px-1 py-2 text-lg" style={{ width: '22px' }}>{isAward ? '🏆' : '☕'}</td>
         <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '36px' }}>{timeString}</td>
-        <td colSpan={7} className="px-2 py-2">
+        <td colSpan={8} className="px-2 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="font-semibold text-white">{block.title}</span>
@@ -446,6 +446,11 @@ function SortableScheduleRow({
         {/* Size */}
         <td className="px-2 py-2 text-xs text-white/80" style={{ width: '65px' }}>
           {routine.entrySizeName}
+        </td>
+
+        {/* Genre/Category */}
+        <td className="px-2 py-2 text-xs text-white/80 truncate" style={{ width: '55px' }} title={routine.categoryName}>
+          {routine.categoryName}
         </td>
 
         {/* Age */}
@@ -645,6 +650,7 @@ function DroppableScheduleTable({
               <th className="px-2 py-2 text-xs font-semibold text-white text-center" style={{ width: '35px' }}>STD</th>
               <th className="px-2 py-2 text-xs font-semibold text-white text-left" style={{ width: '80px' }}>CLASS</th>
               <th className="px-2 py-2 text-xs font-semibold text-white text-left" style={{ width: '65px' }}>SIZE</th>
+              <th className="px-2 py-2 text-xs font-semibold text-white text-left" style={{ width: '55px' }}>GENRE</th>
               <th className="px-2 py-2 text-xs font-semibold text-white text-center" style={{ width: '40px' }}>AGE</th>
               <th className="px-2 py-2 text-xs font-semibold text-white text-center" style={{ width: '60px' }}>DUR</th>
               <th className="px-1 py-2 text-xs font-semibold text-white/60 text-center" style={{ width: '30px' }}></th>
