@@ -2386,6 +2386,17 @@ export default function ScheduleV2Page() {
 
           {/* Right: Primary Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Tutorial Button */}
+            <a
+              href="/scheduler-guide.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-gray-900 font-bold rounded-lg transition-all flex items-center gap-2 text-sm shadow-lg shadow-yellow-500/30 hover:shadow-yellow-400/50"
+            >
+              <span>📖</span>
+              <span>TUTORIAL</span>
+            </a>
+
             {/* Feedback Toggle */}
             {competition && (
               <button
